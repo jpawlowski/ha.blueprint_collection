@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# script/python: Format and lint Python files with auto-fix
+#
+# Runs the Ruff formatter and linter (with --fix) over the Python code in this
+# repository: the blueprint tests. Modifies files in place.
+#
+# Usage:
+#   ./script/python
+#
+# Examples:
+#   ./script/python
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+
+activate_venv
+
+run_hook "python" "pre"
+
+log_header "Formatting Python with Ruff"
+ruff format tests/
+
+log_header "Linting Python with Ruff (auto-fix)"
+ruff check tests/ --fix
+
+run_hook "python" "post"
+log_success "Python format and lint completed"

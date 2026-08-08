@@ -1,0 +1,114 @@
+# Template Sync Ignore File
+# ============================================================
+# Files and folders listed here will NOT be synced from the
+# upstream template (jpawlowski/ha.blueprint_collection).
+#
+# Syntax follows .gitignore glob patterns.
+# See: https://github.com/AndreasAugustin/actions-template-sync
+# ============================================================
+
+# ── Your blueprints ──────────────────────────────────────────
+# Never overwrite your blueprints with the template's examples
+blueprints/
+
+# ── Tests ────────────────────────────────────────────────────
+# Test files reference your blueprints by path (author folder set by
+# initialize.sh). Future test files added by the template would arrive
+# with the placeholder author folder hard-coded, breaking the fixtures.
+tests/
+
+# ── Project configuration ─────────────────────────────────────
+# These files are customized for your collection during initialization
+# (initialize.sh replaces the author folder and related strings).
+# Syncing them back would revert those substitutions.
+pyproject.toml
+.yamllint.yml
+.pre-commit-config.yaml
+
+# ── Ignore pattern files ───────────────────────────────────────
+# Keep your own additions to these lists.
+.gitignore
+.prettierignore
+
+# ── VS Code workspace settings ───────────────────────────────
+# launch.json and tasks.json reference project-specific paths
+# in debugger arguments and task commands.
+.vscode/launch.json
+.vscode/tasks.json
+
+# ── User-specific project files ──────────────────────────────
+# These are customized for your collection during initialization
+README.md
+README.template.md
+LICENSE
+initialize.sh
+CONTRIBUTING.md
+DEPENDENCIES.md
+
+# ── AI agent instruction files ───────────────────────────────
+# Project-identity files are customized during initialization and must not be
+# overwritten by template sync (they contain your collection title, author
+# folder, repo URL, etc.). The path-specific *.instructions.md files under
+# .github/instructions/ use generic placeholders and ARE safely synced.
+AGENTS.md
+CODEX.md
+CLAUDE.md
+.github/copilot-instructions.md
+
+# ── Project governance ────────────────────────────────────────
+# Shipped once with the template, then owned by the collection maintainer.
+# Template sync must not silently change contribution or AI policies.
+AI_POLICY.md
+.github/pull_request_template.md
+
+# ── GitHub project settings ──────────────────────────────────
+# Ownership, funding, and other per-project settings
+.github/CODEOWNERS
+.github/FUNDING.yml
+
+# ── Script and DevContainer hooks ────────────────────────────
+# Your custom pre/post hooks live here — never overwritten by template sync
+script/hooks/
+.devcontainer/hooks/
+
+# ── DevContainer environment overrides ───────────────────────
+# .env contains your project's HA_VERSION override and other settings.
+# User-owned; upstream changes would silently revert it.
+.devcontainer/.env
+
+# ── Home Assistant version pin ───────────────────────────────
+# Your collection decides which HA release train it develops against.
+.ha-version
+
+# ── Release management ───────────────────────────────────────
+# Release Please configuration is project-specific
+release-please-config.json
+.release-please-manifest.json
+
+# ── Local Home Assistant development config ──────────────────
+# Your local HA instance config (credentials, test entities, etc.)
+config/
+
+# ── Documentation ────────────────────────────────────────────
+# Docs are written for your specific collection
+docs/
+
+# ── Template sync ignore list ────────────────────────────────
+# This file itself is excluded so your additions are never overwritten by sync.
+# The runtime copy (.templatesyncignore.runtime) is gitignored and ephemeral.
+.templatesyncignore
+
+# ── This sync workflow ───────────────────────────────────────
+# Keep this file in your control — customize the schedule,
+# add PAT secrets, or adjust PR settings as you see fit.
+.github/workflows/template-sync.yml
+
+# ── Lockfiles ────────────────────────────────────────────────
+# Manage your own lockfile to avoid noisy, conflict-prone PRs.
+# Run `uv lock` manually after updating requirements*.txt.
+uv.lock
+
+# ── GitHub Issue Templates ───────────────────────────────────
+# Issue templates are shipped once with the template and then
+# maintained per-project. They don't need to be kept in sync.
+.github/ISSUE_TEMPLATE/

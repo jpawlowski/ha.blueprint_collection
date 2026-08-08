@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# script/version: Display the current collection version
+#
+# Reads the canonical version from the release-please manifest. Individual
+# blueprints are not versioned separately; the repository (and thus every
+# import link) is released as a whole.
+#
+# Usage:
+#   ./script/version [--tag]
+#
+# Examples:
+#   ./script/version          # Print: 0.1.0
+#   ./script/version --tag    # Print: v0.1.0
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+
+RP_MANIFEST=".release-please-manifest.json"
+
+require_command jq "apt-get install jq"
+
+get_version() {
+    jq -r '.["."]' "$RP_MANIFEST"
+}
+
+run_hook "version" "pre"
+
+case "${1:-}" in
+--tag)
+    echo "v$(get_version)"
+    ;;
+"")
+    get_version
+    ;;
+*)
+    log_error "Unknown option: $1"
+    echo "Usage: script/version [--tag]"
+    exit 1
+    ;;
+esac
+
+run_hook "version" "post"

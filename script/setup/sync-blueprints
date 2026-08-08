@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# script/sync-blueprints: Sync repository blueprints into the dev HA instance
+#
+# Mirrors blueprints/<domain>/... into config/blueprints/<domain>/... using
+# real directories and per-file symlinks. File symlinks (unlike directory
+# symlinks) are found by Home Assistant's blueprint folder scan, and edits in
+# the workspace are live in the running instance - reload the automation,
+# script, or template integration to pick up changes.
+#
+# Stale symlinks (deleted or renamed source files) are removed; regular files
+# in config/blueprints/ (e.g. blueprints imported via the UI) are left alone.
+#
+# Usage:
+#   ./script/setup/sync-blueprints
+#
+# Examples:
+#   ./script/setup/sync-blueprints
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+# shellcheck source=script/.lib/blueprints.sh
+source "$SCRIPT_DIR/.lib/blueprints.sh"
+
+run_hook "setup/sync-blueprints" "pre"
+
+log_header "Syncing blueprints into config/blueprints/"
+
+# Clean up broken symlinks (source file deleted or renamed)
+cleaned=0
+if [[ -d config/blueprints ]]; then
+    while IFS= read -r -d '' link; do
+        if [[ ! -e "$link" ]]; then
+            rm "$link"
+            log_step "Removed stale link: ${link#config/blueprints/}"
+            cleaned=$((cleaned + 1))
+        fi
+    done < <(find config/blueprints -type l -print0)
+fi
+
+# Create/refresh one symlink per blueprint file
+synced=0
+while IFS= read -r -d '' src; do
+    dest="config/$src"
+    dest_dir=$(dirname "$dest")
+    mkdir -p "$dest_dir"
+
+    # Never overwrite a regular file (e.g. imported via the HA UI)
+    if [[ -e "$dest" && ! -L "$dest" ]]; then
+        log_warning "Skipping $src: config/${src} exists as a regular file"
+        continue
+    fi
+
+    target=$(realpath --relative-to="$dest_dir" "$src")
+    if [[ "$(readlink "$dest" 2>/dev/null)" != "$target" ]]; then
+        ln -sfn "$target" "$dest"
+        log_result 0 "Linked: $src"
+        synced=$((synced + 1))
+    fi
+done < <(list_blueprint_files)
+
+if [[ $synced -eq 0 && $cleaned -eq 0 ]]; then
+    log_info "No changes needed"
+else
+    log_success "Synced $synced blueprint(s), cleaned up $cleaned stale link(s)"
+fi
+
+run_hook "setup/sync-blueprints" "post"

@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# script/clean: Clean up development artifacts and caches
+#
+# Removes build artifacts and test caches. Use --deep to also remove
+# __pycache__ directories and .pyc files.
+#
+# Usage:
+#   ./script/clean [--deep]
+#
+# Examples:
+#   ./script/clean           # Standard cleanup (recommended)
+#   ./script/clean --deep    # Also remove __pycache__
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+
+DEEP_MODE=false
+if [[ ${1:-} == --deep ]]; then
+    DEEP_MODE=true
+fi
+
+run_hook "clean" "pre"
+
+log_header "Cleaning development artifacts"
+
+# Clean pytest cache
+if [[ -d .pytest_cache ]]; then
+    log_step "Removing .pytest_cache"
+    rm -rf .pytest_cache
+fi
+
+# Clean coverage files
+if [[ -f .coverage ]]; then
+    log_step "Removing .coverage"
+    rm -f .coverage
+fi
+if [[ -f coverage.xml ]]; then
+    log_step "Removing coverage.xml"
+    rm -f coverage.xml
+fi
+
+# Clean ruff cache
+if [[ -d .ruff_cache ]]; then
+    log_step "Removing .ruff_cache"
+    rm -rf .ruff_cache
+fi
+
+# Optional: Clean __pycache__ (normally not needed, but useful for troubleshooting)
+if [[ $DEEP_MODE == true ]]; then
+    log_step "Deep clean: Removing all __pycache__ directories"
+    find . -type d -name "__pycache__" -delete 2>/dev/null || true
+    log_step "Deep clean: Removing all .pyc files"
+    find . -type f -name "*.pyc" -delete 2>/dev/null || true
+fi
+
+run_hook "clean" "post"
+log_success "Cleanup complete"
+
+if [[ $DEEP_MODE == false ]]; then
+    echo ""
+    log_info "Tip: Use './script/clean --deep' to also remove __pycache__ directories"
+    echo ""
+    log_info "Tip: Use './script/setup/reset' to reset config/ to fresh HA installation"
+    log_step "(removes everything, restores configuration.yaml, re-runs setup)"
+fi

@@ -1,0 +1,170 @@
+#!/bin/bash
+
+# script/blueprint-check: Validate all Home Assistant blueprints in blueprints/
+#
+# Validates every blueprint YAML file against Home Assistant's own blueprint
+# schema (the exact schema of the pinned HA version in the venv), plus
+# repository-level rules that Home Assistant itself does not check:
+#   - the folder domain (automation/script/template) matches blueprint.domain
+#   - every declared input is actually used via !input (and vice versa)
+#   - homeassistant.min_version is present and not newer than the dev HA version
+#   - source_url points to this repository and the file's actual path
+#   - metadata quality (name, description, author)
+#
+# Usage:
+#   ./script/blueprint-check
+#
+# Examples:
+#   ./script/blueprint-check
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+# shellcheck source=script/.lib/blueprints.sh
+source "$SCRIPT_DIR/.lib/blueprints.sh"
+
+activate_venv
+
+run_hook "blueprint-check" "pre"
+
+log_header "Validating Home Assistant blueprints"
+
+# Derive the expected source_url prefix from the git origin remote.
+# Locally without a remote (e.g. right after 'git init') the source_url
+# comparison is skipped; CI always has the remote and enforces it.
+EXPECTED_SOURCE_PREFIX=""
+if origin_url=$(git remote get-url origin 2>/dev/null); then
+    # Normalize git@github.com:user/repo.git and https://github.com/user/repo(.git)
+    slug=$(printf '%s' "$origin_url" |
+        sed -E 's#^git@github\.com:##; s#^https://github\.com/##; s#\.git$##')
+    if [[ -n "$slug" ]]; then
+        EXPECTED_SOURCE_PREFIX="https://github.com/${slug}/blob/main"
+    fi
+fi
+export EXPECTED_SOURCE_PREFIX
+
+python3 <<'PY'
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+from awesomeversion import AwesomeVersion
+from homeassistant.components.blueprint.errors import InvalidBlueprint
+from homeassistant.components.blueprint.models import Blueprint
+from homeassistant.components.blueprint.schemas import BLUEPRINT_SCHEMA
+from homeassistant.const import __version__ as HA_VERSION
+from homeassistant.util import yaml as yaml_util
+
+ROOT = Path("blueprints")
+DOMAINS = ("automation", "script", "template")
+SOURCE_PREFIX = os.environ.get("EXPECTED_SOURCE_PREFIX", "")
+
+errors: list[str] = []
+warnings: list[str] = []
+
+
+def check_file(domain: str, path: Path) -> None:
+    """Validate a single blueprint file."""
+    rel = path.as_posix()
+
+    try:
+        data = yaml_util.load_yaml_dict(path)
+    except Exception as err:  # noqa: BLE001 - report any parse failure
+        errors.append(f"{rel}: failed to parse YAML: {err}")
+        return
+
+    try:
+        bp = Blueprint(data, path=rel, expected_domain=domain, schema=BLUEPRINT_SCHEMA)
+    except InvalidBlueprint as err:
+        errors.append(f"{rel}: {err}")
+        return
+
+    meta = data["blueprint"]
+
+    # Declared-but-unused inputs (missing inputs already raise InvalidBlueprint)
+    used = yaml_util.extract_inputs(data)
+    unused = set(bp.inputs) - used
+    if unused:
+        errors.append(f"{rel}: declared inputs never used via !input: {', '.join(sorted(unused))}")
+
+    # min_version: required by this repository, and must be testable with the
+    # development HA version (otherwise CI validates against a schema the
+    # blueprint does not claim to support).
+    min_version = (meta.get("homeassistant") or {}).get("min_version")
+    if min_version is None:
+        warnings.append(f"{rel}: no homeassistant.min_version set - importers get no compatibility hint")
+    elif AwesomeVersion(min_version) > AwesomeVersion(HA_VERSION):
+        errors.append(
+            f"{rel}: min_version {min_version} is newer than the development "
+            f"HA version {HA_VERSION} - it cannot be validated or tested here"
+        )
+
+    # source_url: must point at this file in this repository
+    source_url = meta.get("source_url")
+    if source_url is None:
+        warnings.append(f"{rel}: no source_url set - the file cannot be imported or updated from a link")
+    elif SOURCE_PREFIX:
+        expected = f"{SOURCE_PREFIX}/{rel}"
+        if source_url != expected:
+            errors.append(f"{rel}: source_url mismatch\n      found:    {source_url}\n      expected: {expected}")
+
+    # Metadata quality
+    if not meta.get("description"):
+        warnings.append(f"{rel}: no description - importers see an empty blueprint page")
+    if not meta.get("author"):
+        warnings.append(f"{rel}: no author set")
+
+
+checked = 0
+for domain in DOMAINS:
+    base = ROOT / domain
+    if not base.is_dir():
+        continue
+    for path in sorted(base.rglob("*")):
+        if path.is_dir():
+            continue
+        if path.suffix == ".yml":
+            errors.append(f"{path.as_posix()}: Home Assistant only loads '.yaml' blueprint files - rename to .yaml")
+            continue
+        if path.suffix != ".yaml":
+            warnings.append(f"{path.as_posix()}: unexpected non-YAML file in blueprints/")
+            continue
+        if path.parent == base:
+            warnings.append(
+                f"{path.as_posix()}: file lives directly in blueprints/{domain}/ - "
+                "place blueprints in an author subfolder (blueprints/"
+                f"{domain}/<author>/) so imports stay collision-free"
+            )
+        check_file(domain, path)
+        checked += 1
+
+# Anything at the top level that is not a known domain folder
+if ROOT.is_dir():
+    for child in sorted(ROOT.iterdir()):
+        if child.name not in DOMAINS:
+            errors.append(
+                f"{child.as_posix()}: unexpected entry in blueprints/ - "
+                f"only {', '.join(DOMAINS)} domain folders are loaded by Home Assistant"
+            )
+
+if not SOURCE_PREFIX:
+    print("i No git origin remote - skipping source_url verification")
+
+for msg in warnings:
+    print(f"WARNING: {msg}")
+for msg in errors:
+    print(f"ERROR: {msg}", file=sys.stderr)
+
+print(f"\nChecked {checked} blueprint(s) against Home Assistant {HA_VERSION}: {len(errors)} error(s), {len(warnings)} warning(s)")
+if errors:
+    raise SystemExit(1)
+PY
+
+run_hook "blueprint-check" "post"
+log_success "Blueprint validation completed"

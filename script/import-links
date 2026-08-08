@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# script/import-links: Print My Home Assistant import links for all blueprints
+#
+# Generates the "Import Blueprint" badge markdown for every blueprint in the
+# collection, derived from each file's source_url. Users click these to import
+# a blueprint straight into their own Home Assistant instance.
+#
+# Home Assistant accepts GitHub blob URLs directly and resolves them to raw,
+# so the source_url in the blueprint IS the import URL.
+#
+# Usage:
+#   ./script/import-links [--markdown|--url]
+#
+# Examples:
+#   ./script/import-links             # Markdown badges (for README.md)
+#   ./script/import-links --url       # Plain import URLs
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+# shellcheck source=script/.lib/blueprints.sh
+source "$SCRIPT_DIR/.lib/blueprints.sh"
+
+activate_venv
+
+FORMAT="${1:---markdown}"
+case "$FORMAT" in
+--markdown | --url) ;;
+*)
+    log_error "Unknown option: $FORMAT"
+    echo "Usage: script/import-links [--markdown|--url]"
+    exit 1
+    ;;
+esac
+
+run_hook "import-links" "pre"
+
+FORMAT="$FORMAT" python3 <<'PY'
+from __future__ import annotations
+
+import os
+from pathlib import Path
+from urllib.parse import quote
+
+from homeassistant.util import yaml as yaml_util
+
+FORMAT = os.environ["FORMAT"]
+BADGE = "https://my.home-assistant.io/badges/blueprint_import.svg"
+REDIRECT = "https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url="
+
+for domain in ("automation", "script", "template"):
+    base = Path("blueprints") / domain
+    if not base.is_dir():
+        continue
+    files = sorted(base.rglob("*.yaml"))
+    if not files:
+        continue
+
+    if FORMAT == "--markdown":
+        print(f"### {domain.capitalize()} blueprints\n")
+
+    for path in files:
+        meta = yaml_util.load_yaml_dict(path)["blueprint"]
+        source_url = meta.get("source_url")
+        if not source_url:
+            print(f"WARNING: {path.as_posix()} has no source_url - skipped")
+            continue
+
+        import_url = f"{REDIRECT}{quote(source_url, safe='')}"
+        if FORMAT == "--url":
+            print(import_url)
+            continue
+
+        name = meta.get("name", path.stem)
+        description = (meta.get("description") or "").strip().replace("\n", " ")
+        print(f"#### {name}\n")
+        if description:
+            print(f"{description}\n")
+        print(f"[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.]({BADGE})]({import_url})\n")
+PY
+
+run_hook "import-links" "post"

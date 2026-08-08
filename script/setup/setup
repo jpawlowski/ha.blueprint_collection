@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# script/setup: Setup script used by DevContainers to prepare the project
+#
+# Installs optional development tools (pyright, GitHub Copilot CLI)
+# and configures the environment. Called automatically by DevContainer postStartCommand.
+#
+# Usage:
+#   ./script/setup/setup
+#
+# Examples:
+#   ./script/setup/setup
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+
+# Load environment overrides in two layers (later layers win):
+#   .devcontainer/.env       — project-level defaults, committed to the repo
+#   .devcontainer/.env.local — user/machine-specific overrides, gitignored
+# bootstrap also sources these files, but as a subprocess its env changes don't propagate back.
+_env_file=".devcontainer/.env"
+if [[ -f "$_env_file" ]]; then
+    # shellcheck source=/dev/null
+    source "$_env_file"
+fi
+unset _env_file
+_env_local=".devcontainer/.env.local"
+if [[ -f "$_env_local" ]]; then
+    # shellcheck source=/dev/null
+    source "$_env_local"
+fi
+unset _env_local
+
+"$SCRIPT_DIR/setup/bootstrap"
+
+ensure_command_alias() {
+    local alias_name=$1
+    local target_name=$2
+    local bin_dir="$HOME/.local/bin"
+    local target_path
+
+    if command -v "$alias_name" >/dev/null 2>&1; then
+        return
+    fi
+
+    if ! target_path=$(command -v "$target_name" 2>/dev/null); then
+        return
+    fi
+
+    mkdir -p "$bin_dir"
+    ln -sfn "$target_path" "$bin_dir/$alias_name"
+    log_step "Linking command alias: $alias_name -> $target_name"
+}
+
+ensure_workspace_binary_link() {
+    local binary_name=$1
+    local bin_dir="$HOME/.local/bin"
+    local target_path="$PWD/node_modules/.bin/$binary_name"
+
+    if [[ ! -x "$target_path" ]]; then
+        return
+    fi
+
+    mkdir -p "$bin_dir"
+    ln -sfn "$target_path" "$bin_dir/$binary_name"
+    log_step "Linking workspace binary: $binary_name"
+}
+
+log_header "Configuring AI agent tool aliases"
+ensure_command_alias "bat" "batcat"
+ensure_command_alias "fd" "fdfind"
+ensure_command_alias "fd-find" "fdfind"
+ensure_command_alias "git-delta" "delta"
+ensure_command_alias "httpie" "http"
+ensure_command_alias "ipython" "ipython3"
+ensure_command_alias "miller" "mlr"
+ensure_command_alias "ripgrep" "rg"
+ensure_workspace_binary_link "copilot"
+ensure_workspace_binary_link "pyright"
+
+if [[ -z ${VIRTUAL_ENV:-} ]]; then
+    log_header "Activating virtual environment"
+    # shellcheck source=/dev/null
+    source "$HOME/ha-venv/bin/activate"
+fi
+
+"$SCRIPT_DIR/setup/seed-http-config"
+"$SCRIPT_DIR/setup/sync-blueprints"
+
+run_hook "setup/setup" "post"
+
+echo ""
+log_success "Project setup complete"

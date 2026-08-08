@@ -1,0 +1,52 @@
+# yamllint disable rule:line-length
+blueprint:
+  name: Flash light
+  description: >-
+    Flash a light a configurable number of times. Useful as a visual
+    notification, for example when a door opens or a timer finishes.
+  domain: script
+  author: Blueprint Collection
+  source_url: https://github.com/jpawlowski/ha.blueprint_collection/blob/main/blueprints/script/ha_blueprint_author/flash_light.yaml
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    light_target:
+      name: Light
+      description: The light (or lights) to flash.
+      selector:
+        target:
+          entity:
+            domain: light
+    flash_count:
+      name: Number of flashes
+      description: How many times the light turns on and off.
+      default: 3
+      selector:
+        number:
+          min: 1
+          max: 20
+          mode: box
+    interval:
+      name: Interval
+      description: Time between each on/off transition.
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.5
+          unit_of_measurement: seconds
+
+mode: single
+sequence:
+  - repeat:
+      count: !input flash_count
+      sequence:
+        - action: light.turn_on
+          target: !input light_target
+        - delay:
+            seconds: !input interval
+        - action: light.turn_off
+          target: !input light_target
+        - delay:
+            seconds: !input interval

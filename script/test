@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# script/test: Run project tests
+#
+# Runs pytest with project configuration. Tests instantiate the repository
+# blueprints in an in-memory Home Assistant instance and assert their runtime
+# behavior (triggers, service calls, template states).
+#
+# Usage:
+#   ./script/test [PYTEST_OPTIONS]
+#
+# Examples:
+#   ./script/test
+#   ./script/test -v
+#   ./script/test -k motion_light
+#   ./script/test tests/test_automation_motion_light.py
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+
+activate_venv
+
+run_hook "test" "pre"
+
+log_header "Running tests"
+python3 -m pytest "$@"
+
+run_hook "test" "post"
+log_success "Tests completed"

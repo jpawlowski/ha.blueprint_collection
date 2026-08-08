@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# script/spell: Fix spelling issues with codespell
+#
+# Runs codespell with auto-fix over blueprints, documentation, scripts, and
+# tests. Only unambiguous corrections are applied automatically.
+#
+# Usage:
+#   ./script/spell
+#
+# Examples:
+#   ./script/spell
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+
+activate_venv
+
+run_hook "spell" "pre"
+
+log_header "Fixing spelling with codespell"
+codespell \
+    --ignore-words-list=aiport,astroid,checkin,currenty,hass,iif,incomfort,lookin,nam,NotIn \
+    --skip="./.*,*.csv,*.json,*.ambr,uv.lock" \
+    --quiet-level=2 \
+    --write-changes \
+    blueprints/ \
+    docs/ \
+    README.md \
+    CONTRIBUTING.md \
+    DEPENDENCIES.md \
+    script/ \
+    tests/
+
+run_hook "spell" "post"
+log_success "Spell fix completed"

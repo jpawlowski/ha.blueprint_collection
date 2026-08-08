@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# script/python-check: Check Python files without making changes
+#
+# Runs the Ruff formatter (--check) and linter over the Python code in this
+# repository: the blueprint tests. No files are modified.
+#
+# Usage:
+#   ./script/python-check
+#
+# Examples:
+#   ./script/python-check
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+
+activate_venv
+
+run_hook "python-check" "pre"
+
+log_header "Checking Python formatting with Ruff"
+ruff format tests/ --check
+
+log_header "Linting Python with Ruff"
+ruff check tests/
+
+run_hook "python-check" "post"
+log_success "Python check completed"

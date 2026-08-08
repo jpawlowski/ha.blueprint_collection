@@ -1,0 +1,27 @@
+# yamllint disable rule:line-length
+blueprint:
+  name: Inverted binary sensor
+  description: >-
+    Create a binary sensor that always shows the opposite of a reference
+    binary sensor. The sensor is unavailable while the reference entity
+    has no usable state.
+  domain: template
+  author: Blueprint Collection
+  source_url: https://github.com/jpawlowski/ha.blueprint_collection/blob/main/blueprints/template/ha_blueprint_author/inverted_binary_sensor.yaml
+  homeassistant:
+    min_version: 2024.10.0
+  input:
+    reference_entity:
+      name: Reference entity
+      description: The binary sensor to invert.
+      selector:
+        entity:
+          filter:
+            domain: binary_sensor
+
+variables:
+  reference_entity: !input reference_entity
+
+binary_sensor:
+  state: "{{ states(reference_entity) == 'off' }}"
+  availability: "{{ has_value(reference_entity) }}"
