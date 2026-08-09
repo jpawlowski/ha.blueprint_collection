@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/jpawlowski/ha.blueprint_collection/schemas/json/blueprint_schema.json",
+  "title": "Home Assistant Blueprint",
+  "description": "Editor validation for Home Assistant blueprints. Derived from homeassistant.components.blueprint.schemas.BLUEPRINT_SCHEMA. This provides completion and typo detection while editing; script/blueprint-check remains authoritative, because it runs Home Assistant's own validator against the pinned version.",
+  "type": "object",
+  "required": ["blueprint"],
+  "properties": {
+    "blueprint": {
+      "type": "object",
+      "description": "Blueprint metadata shown in the import dialog.",
+      "required": ["name", "domain"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Short, user-facing name (e.g. \"Motion-activated light\")."
+        },
+        "description": {
+          "type": "string",
+          "description": "What the blueprint does, what it requires, and any caveats. Markdown is supported and rendered in the import dialog."
+        },
+        "domain": {
+          "type": "string",
+          "description": "The domain this blueprint targets. Must match the folder it lives in (blueprints/<domain>/<author>/).",
+          "enum": ["automation", "script", "template"]
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "GitHub blob URL of this file on the default branch. This is what makes re-import and updating work for users; script/blueprint-check verifies it matches the file's actual path.",
+          "pattern": "^https?://"
+        },
+        "author": {
+          "type": "string",
+          "description": "Creator of the blueprint."
+        },
+        "homeassistant": {
+          "type": "object",
+          "description": "Home Assistant version requirements.",
+          "additionalProperties": false,
+          "properties": {
+            "min_version": {
+              "type": "string",
+              "description": "Oldest supported Home Assistant version, formatted as major.minor.patch (e.g. 2024.10.0). Raise it when adopting newer syntax.",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$"
+            }
+          }
+        },
+        "input": {
+          "type": "object",
+          "description": "User-configurable fields, referenced in the blueprint body with the !input tag.",
+          "additionalProperties": {
+            "oneOf": [
+              { "$ref": "#/definitions/input" },
+              { "$ref": "#/definitions/section" },
+              { "type": "null" }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "input": {
+      "type": "object",
+      "description": "A single user-configurable input.",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display label for the field."
+        },
+        "description": {
+          "type": "string",
+          "description": "Help text shown under the field."
+        },
+        "default": {
+          "description": "Value used when the user leaves the field untouched. Providing one wherever sensible keeps the blueprint usable with minimal configuration."
+        },
+        "selector": { "$ref": "#/definitions/selector" }
+      }
+    },
+    "section": {
+      "type": "object",
+      "description": "A visual group of inputs. Requires Home Assistant 2024.6.0 or newer.",
+      "required": ["input"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Section title."
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon shown next to the section title (e.g. mdi:cog)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Help text shown under the section title."
+        },
+        "collapsed": {
+          "type": "boolean",
+          "description": "Whether the section starts collapsed. Use for advanced options so the common path stays short."
+        },
+        "input": {
+          "type": "object",
+          "description": "Inputs nested in this section. Their keys stay globally unique and are referenced directly with !input.",
+          "additionalProperties": {
+            "oneOf": [{ "$ref": "#/definitions/input" }, { "type": "null" }]
+          }
+        }
+      }
+    },
+    "selector": {
+      "type": "object",
+      "description": "The UI control for this input. Exactly one selector type must be given. See https://www.home-assistant.io/docs/blueprint/selectors/",
+      "minProperties": 1,
+      "maxProperties": 1,
+      "additionalProperties": true
+    }
+  }
+}

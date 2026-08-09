@@ -90,6 +90,11 @@ The same mechanism exists for the DevContainer in `.devcontainer/hooks/`.
 | `.prettierrc.yml`         | Markdown/YAML formatting                  |
 | `.pre-commit-config.yaml` | Which hooks run on commit                 |
 
+Editor validation for blueprints comes from `schemas/json/blueprint_schema.json`, mapped to `blueprints/**/*.yaml`
+in `.vscode/settings.default.jsonc` and `.devcontainer/devcontainer.json`. Keep that mapping: without an explicit
+entry, the YAML extension picks an unrelated schema from SchemaStore based on the `blueprints/` path name and
+marks every file invalid.
+
 The Ruff configuration is inherited from Home Assistant Core's own, minus the integration-specific rules. It is
 strict on purpose; loosening it is fine for a collection whose only Python is tests, but leave the import
 ordering alone — it keeps `homeassistant` imports grouped predictably.

@@ -17,3 +17,9 @@
 # Testing utilities for Home Assistant custom components
 # Provides additional fixtures and utilities specifically for custom component testing
 pytest-homeassistant-custom-component==0.13.354
+
+# JSON Schema validation, used by tests/test_editor_schema.py to verify that the
+# editor schema in schemas/json/ accepts every real blueprint. It is present in
+# the environment transitively already, but only by accident of Home Assistant's
+# dependency tree — declared here because a test depends on it.
+jsonschema==4.26.0

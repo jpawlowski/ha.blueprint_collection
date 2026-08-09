@@ -195,9 +195,18 @@
         "github.copilot.chat.commitMessageGeneration.instructions": [
           { "file": ".github/instructions/blueprint.commit-message.instructions.md" }
         ],
+        // An explicit mapping here takes precedence over the automatic SchemaStore
+        // lookup. Without the blueprints entry, SchemaStore matches our files
+        // against an unrelated third-party schema ("Torque Blueprint Spec") purely
+        // because of the blueprints/ path, reporting every valid blueprint as invalid.
         "yaml.schemas": {
           "${containerWorkspaceFolder}/schemas/yaml/configuration_schema.yaml": [
             "config/configuration.yaml"
+          ],
+          "${containerWorkspaceFolder}/schemas/json/blueprint_schema.json": [
+            "blueprints/automation/**/*.yaml",
+            "blueprints/script/**/*.yaml",
+            "blueprints/template/**/*.yaml"
           ]
         }
       }

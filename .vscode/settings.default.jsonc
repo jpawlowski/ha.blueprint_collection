@@ -89,7 +89,16 @@
   ],
 
   // These values differ between working with devcontainer and locally, therefore their values should NOT be in sync!
+  // An explicit mapping here takes precedence over the automatic SchemaStore
+  // lookup. Without the blueprints entry, SchemaStore matches our files against
+  // an unrelated third-party schema ("Torque Blueprint Spec") purely because of
+  // the blueprints/ path, which reports every valid blueprint as invalid.
   "yaml.schemas": {
-    "./schemas/yaml/configuration_schema.yaml": ["config/configuration.yaml"]
+    "./schemas/yaml/configuration_schema.yaml": ["config/configuration.yaml"],
+    "./schemas/json/blueprint_schema.json": [
+      "blueprints/automation/**/*.yaml",
+      "blueprints/script/**/*.yaml",
+      "blueprints/template/**/*.yaml"
+    ]
   }
 }

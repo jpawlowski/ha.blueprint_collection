@@ -120,6 +120,7 @@ config/                               Local HA instance (gitignored except confi
 script/                               Development and validation scripts
   .lib/                               Shared shell libraries
   setup/                              Bootstrap, reset, sync
+schemas/json/                         JSON Schema for blueprints (editor support)
 schemas/yaml/                         JSON Schema for configuration.yaml (editor support)
 docs/user/                            End-user documentation
 docs/development/                     This directory

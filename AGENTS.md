@@ -148,6 +148,19 @@ Every blueprint lives at `blueprints/<domain>/<author>/<name>.yaml`:
 - Files directly in `blueprints/<domain>/` (always use the author subfolder)
 - Any other top-level folder inside `blueprints/` (Home Assistant only loads the three domain folders)
 
+### Editor Support
+
+`schemas/json/blueprint_schema.json` is mapped to `blueprints/**/*.yaml` in the VS Code settings, so the editor
+offers completion for the `blueprint:` block and flags typos, unknown domains, malformed `min_version`, and
+malformed selectors while you type.
+
+That mapping is not cosmetic: without it the YAML extension auto-matches an unrelated third-party schema from
+SchemaStore purely because of the `blueprints/` path name, and reports every valid blueprint as invalid. Do not
+remove it.
+
+The editor schema is an approximation and only ever a convenience — `script/blueprint-check` runs Home
+Assistant's own validator and stays authoritative. `tests/test_editor_schema.py` keeps the two from drifting.
+
 ### Required Metadata
 
 Every blueprint MUST declare in its `blueprint:` block:
