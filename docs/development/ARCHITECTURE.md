@@ -40,7 +40,7 @@ This is the exact code path Home Assistant runs when a user imports the blueprin
 will import cleanly. `Blueprint.__init__` already rejects a domain mismatch and any `!input` reference without a
 matching definition; `BLUEPRINT_SCHEMA` validates every selector.
 
-Because the validator is the real thing, it tracks Home Assistant automatically: bump `.ha-version`, and the
+Because the validator is the real thing, it tracks Home Assistant automatically: bump `HA_VERSION`, and the
 blueprints are validated against the new schema with no changes here.
 
 On top of that, `script/blueprint-check` adds repository rules Home Assistant has no opinion about:
@@ -51,7 +51,7 @@ On top of that, `script/blueprint-check` adds repository rules Home Assistant ha
 | `.yaml` extension                               | HA's folder scan is `glob("**/*.yaml")` — `.yml` is ignored |
 | Author subfolder                                | Keeps imports collision-free on the user's instance         |
 | Declared-but-unused inputs                      | Dead form fields confuse users                              |
-| `min_version` present and ≤ `.ha-version`       | An unvalidatable claim is worse than none                   |
+| `min_version` present and ≤ the installed HA    | An unvalidatable claim is worse than none                   |
 | `source_url` matches repository and actual path | A wrong `source_url` breaks re-import for every user        |
 
 ## Mechanism 2: Runtime tests
@@ -96,14 +96,13 @@ symlinks from deleted or renamed sources are cleaned up on each run.
 
 ## Version pinning
 
-One Home Assistant version governs everything, recorded in `.ha-version`:
+One Home Assistant version governs everything, recorded as `HA_VERSION` in `.devcontainer/.env`:
 
 ```text
-.ha-version                  ── read by ─→ script/setup/bootstrap  (installs HA)
-                             ── read by ─→ .github/workflows/*     (cache keys)
-                             ── checked ─→ script/blueprint-check  (min_version ceiling)
-requirements_test.txt        ── pins ────→ pytest-homeassistant-custom-component
-.devcontainer/.env           ── optional ─→ HA_VERSION override
+.devcontainer/.env       HA_VERSION ── read by ─→ script/setup/bootstrap  (installs HA)
+                                    ── read by ─→ .github/workflows/*     (cache keys)
+.devcontainer/.env.local HA_VERSION ── overrides ─→ the above (gitignored, personal)
+requirements_test.txt               ── pins ─────→ pytest-homeassistant-custom-component
 ```
 
 `script/ha-version-sync` enforces that all of these target the same release train (`YYYY.M`), and that no
@@ -127,7 +126,7 @@ docs/development/                     This directory
 .github/instructions/                 Path-scoped AI agent rules
 .github/prompts/                      Reusable agent prompts
 .github/workflows/                    CI
-.ha-version                           Pinned HA release train
+.devcontainer/.env                    HA_VERSION — the pinned Home Assistant version
 ```
 
 ## Distribution

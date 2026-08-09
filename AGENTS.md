@@ -161,7 +161,8 @@ Every blueprint MUST declare in its `blueprint:` block:
   This is what makes re-import and "update blueprint" work for users. `script/blueprint-check` verifies it matches
   the file's actual path.
 - `homeassistant.min_version` — the oldest HA version the blueprint works on. Raise it when using newer syntax
-  (e.g. `triggers:`/`actions:` keys require 2024.10). It must never be newer than the version in `.ha-version`,
+  (e.g. `triggers:`/`actions:` keys require 2024.10). It must never be newer than the development Home Assistant
+  version (`HA_VERSION` in `.devcontainer/.env`),
   otherwise CI cannot validate the blueprint.
 
 ### Inputs and Selectors
@@ -230,7 +231,7 @@ script/check      # Full validation: type-check + lint-check + spell-check + blu
 - Every file against Home Assistant's own `BLUEPRINT_SCHEMA` (the exact schema of the pinned HA version)
 - Folder domain matches `blueprint.domain`; `.yaml` extension; author subfolder placement
 - Declared-but-unused and used-but-undeclared inputs
-- `homeassistant.min_version` present and not newer than `.ha-version`
+- `homeassistant.min_version` present and not newer than the development Home Assistant version
 - `source_url` points to this repository and the file's actual path (when a git origin exists)
 - Metadata quality (description, author)
 
@@ -292,12 +293,30 @@ script/test -v             # Verbose
 **Python style for tests:** 4 spaces, 120 char lines, double quotes, full type hints. See
 `.github/instructions/blueprint.python.instructions.md` and `.github/instructions/blueprint.tests.instructions.md`.
 
+## Shared Chassis Files (do not edit here)
+
+Part of the development environment is maintained upstream in the
+[integration blueprint](https://github.com/jpawlowski/hacs.integration_blueprint) and synced into this
+repository. Those files are listed in `.github/chassis-manifest.txt` — currently the DevContainer and agent
+runtime, `script/.lib/`, the generic scripts (`lint`, `markdown`, `shell`, `type-check`, `help`, …), and the
+editor/formatter configuration.
+
+**Never edit a file listed in that manifest.** A pull-request check compares them against upstream and fails on
+any local change. If one genuinely needs blueprint-specific content, remove it from the manifest and say so —
+taking ownership is a deliberate decision, not a workaround.
+
+```bash
+script/chassis-sync --check    # Verify; exit 1 on drift
+script/chassis-sync            # Pull upstream changes into the working tree
+```
+
 ## Versioning and Releases
 
 - The collection is released as a whole via release-please; the version lives in `.release-please-manifest.json`
   (`script/version` prints it). Individual blueprints are not versioned separately.
-- The development/CI Home Assistant version is pinned in `.ha-version` and must stay on the same release train as
-  `pytest-homeassistant-custom-component` in `requirements_test.txt` (`script/ha-version-sync` checks this).
+- The development/CI Home Assistant version is pinned as `HA_VERSION` in `.devcontainer/.env` and must stay on
+  the same release train as `pytest-homeassistant-custom-component` in `requirements_test.txt`
+  (`script/ha-version-sync` checks this). That file is agent-protected — propose the change, do not apply it.
 - Users import blueprints from `main` via the `source_url`/import links — anything merged to `main` is immediately
   importable. Treat `main` as released.
 

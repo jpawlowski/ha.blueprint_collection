@@ -97,11 +97,11 @@ regenerate the import badges and update the README:
 
 ## Home Assistant version bumps
 
-`.ha-version` pins the release train used for validation and tests. When bumping it, update
+`HA_VERSION` in `.devcontainer/.env` pins the version used for validation and tests. When bumping it, update
 `requirements_test.txt` (`pytest-homeassistant-custom-component`) in the same commit — `script/ha-version-sync`
 fails otherwise, both as a pre-commit hook and in CI.
 
-Raising `.ha-version` does not raise any blueprint's `homeassistant.min_version`. Only raise a blueprint's
+Raising `HA_VERSION` does not raise any blueprint's `homeassistant.min_version`. Only raise a blueprint's
 minimum when it actually adopts newer syntax — and note that doing so is a breaking change for users on older
 versions.
 

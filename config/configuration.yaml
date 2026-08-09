@@ -131,13 +131,10 @@ logger:
     # Core system - keep visible for important messages
     homeassistant.core: info
 
-    # IMPORTANT for custom integration development:
-    # Coordinator issues (API calls, update failures)
-    homeassistant.helpers.update_coordinator: info
-    # Entity registration problems
-    homeassistant.helpers.entity_registry: info
-    # Config flow debugging (setup, options)
-    homeassistant.config_entries: info
-
-    # Your integration debug logging - shows EVERYTHING from your integration
-    custom_components.ha_integration_domain: debug
+    # IMPORTANT for blueprint development:
+    # Blueprint loading, import, and schema errors
+    homeassistant.components.blueprint: debug
+    # Automation/script/template runs created from blueprints
+    homeassistant.components.automation: debug
+    homeassistant.components.script: debug
+    homeassistant.components.template: debug

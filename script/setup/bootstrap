@@ -185,22 +185,17 @@ if [[ -f requirements.local.txt ]]; then
     uv pip install --requirement requirements.local.txt
 fi
 
-if [[ -n "${HA_VERSION:-}" ]]; then
-    # Explicit HA_VERSION from environment — use exactly as specified
-    resolve_ha_version HA_VERSION "$HA_VERSION"
-else
-    # Read from .ha-version: treat YEAR.MONTH.0 as YEAR.MONTH so the latest
-    # stable patch is installed (.ha-version records the release train, not a pin)
-    HA_VERSION=$(head -1 .ha-version | tr -d '[:space:]')
-    if [[ -z "$HA_VERSION" ]]; then
-        log_error "HA_VERSION not set and could not be determined from .ha-version"
-        exit 1
-    fi
-    if [[ "$HA_VERSION" =~ ^[0-9]{4}\.[0-9]+\.0$ ]]; then
-        HA_VERSION="${HA_VERSION%.*}" # "2026.8.0" → "2026.8" → latest patch
-    fi
-    resolve_ha_version HA_VERSION "$HA_VERSION"
+# HA_VERSION is the project's canonical Home Assistant pin. It comes from
+# .devcontainer/.env (committed, project-wide) and may be overridden by
+# .devcontainer/.env.local (gitignored, personal). Both were sourced above, so
+# the variable is already set unless someone removed the pin.
+if [[ -z "${HA_VERSION:-}" ]]; then
+    log_error "HA_VERSION is not set"
+    log_info "Set it in ${BOLD}.devcontainer/.env${NC} (project-wide)"
+    log_step "or in ${BOLD}.devcontainer/.env.local${NC} (personal, gitignored)"
+    exit 1
 fi
+resolve_ha_version HA_VERSION "$HA_VERSION"
 
 HA_CORE_BASE_URL="https://raw.githubusercontent.com/home-assistant/core/${HA_VERSION}"
 

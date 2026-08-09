@@ -1,0 +1,84 @@
+# Chassis Manifest
+# ============================================================
+# Files synced verbatim FROM the upstream development chassis:
+#   https://github.com/jpawlowski/hacs.integration_blueprint
+#
+# That repository is the leading one for the shared development
+# environment (DevContainer, agent runtime, generic scripts and linters).
+# This repository owns everything blueprint-specific.
+#
+# Read by .github/workflows/chassis-sync.yml, which opens a pull request
+# whenever any of these files differs from upstream.
+#
+# This is an ALLOWLIST, deliberately. A denylist would silently pull in every
+# new integration-specific file the upstream adds. Adding a file here is an
+# explicit decision that it is generic.
+#
+# Rules for entries:
+#   - One path per line, relative to the repository root
+#   - No globs — every file is listed explicitly, so the diff is reviewable
+#   - Blank lines and # comments are ignored
+#   - A file listed here must be byte-identical in both repositories.
+#     If it needs blueprint-specific content, remove it from this list and
+#     own it here instead.
+#
+# initialize.sh removes the sync workflow and this manifest, because a
+# blueprint author's own repository syncs from THIS repository (via
+# .github/workflows/template-sync.yml), not from the chassis.
+# ============================================================
+
+# ── DevContainer and agent runtime ───────────────────────────
+.devcontainer/_load_env.sh
+.devcontainer/claude-code/managed-settings.json
+.devcontainer/codex/config.toml
+.devcontainer/copilot/copilot-safe
+.devcontainer/copilot/default-flags.txt
+.devcontainer/devcontainer-extensions.json
+.devcontainer/devcontainer-lock.json
+.devcontainer/motd
+.devcontainer/on-create.sh
+.devcontainer/post-create.sh
+.devcontainer/setup-git.sh
+.devcontainer/setup-shell.sh
+
+# ── Shared shell libraries ───────────────────────────────────
+script/.lib/download.sh
+script/.lib/output.sh
+
+# ── Generic scripts (no blueprint/integration specifics) ─────
+script/help
+script/lint
+script/lint-check
+script/markdown
+script/markdown-check
+script/shell
+script/shell-check
+script/type-check
+script/setup/seed-http-config
+
+# ── Editor and formatter configuration ───────────────────────
+.editorconfig
+.gitattributes
+.commitlintrc.json
+.markdownlint.json
+.prettierrc.yml
+.vscode/extensions.json
+
+# ── Generic agent instructions (no domain content) ───────────
+.github/instructions/blueprint.commit-message.instructions.md
+.github/instructions/blueprint.json.instructions.md
+.github/instructions/blueprint.markdown.instructions.md
+.github/instructions/blueprint.shell.instructions.md
+.github/instructions/blueprint.yaml.instructions.md
+
+# ── Generic GitHub configuration ─────────────────────────────
+.github/pull_request_template.md
+.github/workflows/auto-assign.yml
+
+# ── Development tooling dependencies ─────────────────────────
+# Note: requirements_test.txt is NOT synced — it carries the Home Assistant
+# pin, which each repository owns independently.
+requirements_dev.txt
+
+# ── Home Assistant configuration schema (generic) ────────────
+schemas/yaml/configuration_schema.yaml

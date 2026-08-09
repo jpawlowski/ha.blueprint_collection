@@ -44,7 +44,7 @@ blueprint:
 
 - `source_url` must point at THIS file on `main` — `script/blueprint-check` verifies path and repository
 - `min_version` is the oldest HA version the blueprint runs on; raise it when adopting newer syntax
-  (`triggers:`/`actions:` keys → 2024.10; input `sections` → 2024.6). It must not exceed `.ha-version`
+  (`triggers:`/`actions:` keys → 2024.10; input `sections` → 2024.6). It must not exceed the development Home Assistant version
 
 ## Inputs
 

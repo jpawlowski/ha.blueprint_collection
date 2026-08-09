@@ -127,8 +127,9 @@ the blueprint useless to everyone else.
 **Use modern syntax.** `triggers:`/`conditions:`/`actions:` with `trigger:`/`condition:`/`action:` keys — not the
 legacy `platform:`/`service:` spellings. This requires `min_version: 2024.10.0`.
 
-**Set `min_version` honestly.** It must reflect the newest syntax you actually use, and it may not exceed
-`.ha-version` — otherwise CI cannot validate what you claim.
+**Set `min_version` honestly.** It must reflect the newest syntax you actually use, and it may not exceed the
+development Home Assistant version (`HA_VERSION` in `.devcontainer/.env`) — otherwise CI cannot validate what
+you claim.
 
 **One concern per blueprint.** A blueprint that does motion lighting _and_ presence simulation _and_
 notifications is three blueprints. Composition beats configuration flags.

@@ -36,11 +36,11 @@ updates:
       prefix: "chore(deps)"
     ignore:
       # homeassistant is a transitive dependency pulled in by pytest-homeassistant-custom-component.
-      # Its version must stay in sync with .ha-version — update that manually
+      # Its version must stay in sync with HA_VERSION in .devcontainer/.env — update that manually
       # when bumping pytest-homeassistant-custom-component manually.
       - dependency-name: "homeassistant"
       # pytest-homeassistant-custom-component releases track Home Assistant closely.
-      # Keep this pinned and bump it manually together with .ha-version.
+      # Keep this pinned and bump it manually together with HA_VERSION in .devcontainer/.env.
       - dependency-name: "pytest-homeassistant-custom-component"
     # Let patch releases settle 3 days, minor releases 7 days before opening a PR
     cooldown:
@@ -49,7 +49,7 @@ updates:
     groups:
       # Bundle all minor/patch Python dep updates into a single PR; major updates stay separate.
       # pytest-homeassistant-custom-component is intentionally excluded and ignored above,
-      # because it is updated manually together with .ha-version.
+      # because it is updated manually together with HA_VERSION in .devcontainer/.env.
       python-dependencies:
         applies-to: version-updates
         update-types:

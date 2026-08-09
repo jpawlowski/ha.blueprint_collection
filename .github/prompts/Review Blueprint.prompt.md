@@ -17,7 +17,7 @@ If not provided, ask which blueprint to review (or review all under `blueprints/
 - [ ] `name` short and user-facing; `description` explains purpose, requirements, caveats
 - [ ] `source_url` points at this file on `main`; `author` set
 - [ ] `homeassistant.min_version` matches the syntax used (e.g. `triggers:`/`actions:` → 2024.10,
-      input sections → 2024.6) and does not exceed `.ha-version`
+      input sections → 2024.6) and does not exceed the development Home Assistant version
 
 **Inputs:**
 

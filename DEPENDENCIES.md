@@ -18,7 +18,7 @@ This is why there is no `requirements.txt` in this repository, and why there is 
 | `requirements_dev.txt`  | Development tooling (pre-commit, colorlog)           | `script/setup/bootstrap`  |
 | `requirements_test.txt` | Blueprint test framework                             | `script/setup/bootstrap`  |
 | `package.json`          | Node-based tooling (Prettier, markdownlint, Pyright) | `npm ci` during bootstrap |
-| `.ha-version`           | Pinned Home Assistant release train                  | Read by bootstrap and CI  |
+| `.devcontainer/.env`    | Pinned Home Assistant version (`HA_VERSION`)         | Read by bootstrap and CI  |
 
 `requirements.local.txt` (gitignored) is honored if present, for machine-specific extras you do not want to
 commit.
@@ -31,15 +31,15 @@ commit.
 2. **Test dependencies** — `requirements_test.txt`
 3. **Home Assistant's own requirements** — downloaded from the pinned version's tag on GitHub
    (`requirements_all.txt`, `requirements_test.txt`, `package_constraints.txt`)
-4. **Home Assistant core** — `homeassistant==<version from .ha-version>`
+4. **Home Assistant core** — `homeassistant==<version from HA_VERSION>`
 5. **Node dependencies** — `npm ci`
 6. **Git hooks** — `pre-commit install`
 
 Steps 3 and 4 are what make `script/blueprint-check` and `script/test` meaningful: both run against a real Home
 Assistant installation, not a stub.
 
-The installed version is recorded in `<venv>/.ha-version`, so bumping `.ha-version` triggers a clean rebuild of
-the virtual environment on the next bootstrap instead of silently running against the old one.
+The installed version is recorded in a marker file inside the virtual environment, so bumping `HA_VERSION`
+triggers a clean rebuild on the next bootstrap instead of silently running against the old one.
 
 ## Why Home Assistant Core's requirements
 
@@ -56,21 +56,28 @@ The repository therefore only declares what Core does _not_ provide:
 
 ## Version pinning
 
-`.ha-version` is the single source of truth for which Home Assistant to develop against:
+`HA_VERSION` in `.devcontainer/.env` is the single source of truth for which Home Assistant to develop
+against:
 
-```text
-2026.8.0
+```bash
+HA_VERSION=2026.8
 ```
 
-A `YYYY.M.0` value means "latest patch in that month". Explicit patches (`2026.8.3`) and pre-releases
-(`2026.9.0b1`) are used as-is.
+A `YYYY.M` value means "latest patch in that month". Explicit patches (`2026.8.3`) and pre-releases
+(`2026.9.0b1`) are used as-is. The symbolic values `latest` and `beta` also work, but `script/ha-version-sync`
+cannot verify them — it warns loudly instead of failing.
+
+> [!NOTE]
+> This is a committed, project-wide pin that happens to live in an environment file. It is not a secret and
+> not a personal setting — those belong in `.devcontainer/.env.local`.
 
 `pytest-homeassistant-custom-component` in `requirements_test.txt` pins a specific Home Assistant version
 transitively, so the two must agree. `script/ha-version-sync` enforces that they target the same release train
-(`YYYY.M`), and that no CI workflow hardcodes a version instead of reading `.ha-version`. It runs as a
+(`YYYY.M`), and that no CI workflow hardcodes a version instead of reading `.devcontainer/.env`. It runs as a
 pre-commit hook and as a CI job.
 
-**To bump Home Assistant:** edit `.ha-version` and `requirements_test.txt` in the same commit, then re-run
+**To bump Home Assistant:** edit `HA_VERSION` in `.devcontainer/.env` and the
+`pytest-homeassistant-custom-component` pin in `requirements_test.txt` in the same commit, then re-run
 `script/setup/bootstrap`.
 
 **To test against a different version without changing the repository**, override per machine in

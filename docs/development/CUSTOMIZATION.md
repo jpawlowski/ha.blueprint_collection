@@ -48,13 +48,13 @@ exist.
 
 ## Home Assistant version
 
-`.ha-version` pins the release train for validation and tests:
+`HA_VERSION` in `.devcontainer/.env` pins the version used for validation and tests:
 
-```text
-2026.8.0
+```bash
+HA_VERSION=2026.8
 ```
 
-`YYYY.M.0` means "latest patch of that month". To develop against a different version, either edit this file
+`YYYY.M` means "latest patch of that month". To develop against a different version, either edit that value
 (and `requirements_test.txt` — `script/ha-version-sync` enforces the pairing), or override per-machine in
 `.devcontainer/.env.local`:
 
@@ -115,6 +115,41 @@ the blueprint schema and your blueprints stop validating — before your users f
 identity files, and configuration you have customized. Add anything else you want to own outright.
 
 To stop syncing entirely, delete `.github/workflows/template-sync.yml`.
+
+## Chassis sync (collection template only)
+
+> [!NOTE]
+> This section applies to the collection **template** repository. `initialize.sh` removes the chassis sync from
+> your own repository — you receive these files through the normal template sync above.
+
+The shared development environment (DevContainer, agent runtime, generic scripts, linter configuration) is not
+maintained twice. The upstream
+[integration blueprint](https://github.com/jpawlowski/hacs.integration_blueprint) is the **leading** repository
+for those files; the collection template pulls them in:
+
+```text
+hacs.integration_blueprint  ──chassis-sync──▶  ha.blueprint_collection  ──template-sync──▶  your collection
+      (leading for the chassis)                  (leading for blueprints)
+```
+
+The file list is an explicit **allowlist** in `.github/chassis-manifest.txt` — never a denylist, because a
+denylist would silently pull in every new integration-specific file the upstream adds. Adding an entry is a
+deliberate statement that the file is generic and identical in both repositories.
+
+```bash
+script/chassis-sync --check    # Is anything out of date? (exit 1 if yes)
+script/chassis-sync            # Apply upstream changes to the working tree
+```
+
+`.github/workflows/chassis-sync.yml` runs the check on every pull request — so a chassis file edited here
+instead of upstream fails CI — and opens a pull request weekly when upstream has moved on.
+
+**When a chassis file needs blueprint-specific content:** remove it from the manifest and own it here. That is
+the intended escape hatch, not an exception. `.markdownlint-cli2.jsonc` is the existing example — upstream
+excludes a HACS directory that does not exist here.
+
+**When an entry disappears upstream** (renamed or deleted), `script/chassis-sync` fails rather than skipping it,
+because the alternative is quietly keeping a copy nobody maintains.
 
 ## AI agent instructions
 

@@ -399,6 +399,28 @@ if [[ -f ".release-please-manifest.json" && "$DRY_RUN" != true ]]; then
     print_step "Reset version to 0.1.0"
 fi
 
+# 5. Remove the chassis sync
+#
+# The collection template pulls its shared development environment from the
+# upstream integration blueprint. Your repository does not: it syncs from the
+# collection template via .github/workflows/template-sync.yml, which already
+# carries those files along. Keeping the chassis sync here would mean two
+# unrelated repositories opening pull requests against yours.
+readonly -a CHASSIS_FILES=(
+    ".github/workflows/chassis-sync.yml"
+    ".github/chassis-manifest.txt"
+    "script/chassis-sync"
+)
+for chassis_file in "${CHASSIS_FILES[@]}"; do
+    [[ -e "$chassis_file" ]] || continue
+    if [[ "$DRY_RUN" == true ]]; then
+        print_step "Would remove: $chassis_file"
+    else
+        rm -f "$chassis_file"
+        print_step "Removed: $chassis_file"
+    fi
+done
+
 # ── Finish ───────────────────────────────────────────────────────────────────
 
 if [[ "$DRY_RUN" == true ]]; then

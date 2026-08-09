@@ -46,13 +46,13 @@ repos:
 
       # Keep HA release train in sync across all three version sources:
       #   requirements_test.txt (pytest-homeassistant-custom-component pin)
-      #   .ha-version (Home Assistant release train)
+      #   .devcontainer/.env (HA_VERSION — the canonical pin)
       #   .devcontainer/.env (HA_VERSION override, if set)
       - id: ha-version-sync
         name: homeassistant/pytest-homeassistant-custom-component sync
         entry: ./script/ha-version-sync
         language: system
-        files: ^(\.ha-version|requirements_test\.txt|\.devcontainer/\.env)$
+        files: ^(requirements_test\.txt|\.devcontainer/\.env)$
         pass_filenames: false
 
       # Shell script linting

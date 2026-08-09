@@ -32,7 +32,7 @@ reimplement that schema, or import it from an installed Home Assistant.
 - Selector definitions change often; a reimplementation would drift silently and reject valid blueprints or
   accept invalid ones
 - `Blueprint.__init__` already enforces domain match and undefined-`!input` detection for free
-- Bumping `.ha-version` re-validates everything against the new schema at no maintenance cost
+- Bumping the pinned Home Assistant version re-validates everything against the new schema at no maintenance cost
 
 **Consequences:**
 
@@ -144,6 +144,40 @@ blueprint's `source_url` as the import URL. No `hacs.json`, no HACS validation w
 
 ---
 
+### One leading repository for the shared chassis, not a third repository
+
+**Date:** Template initialization
+
+**Context:** This template and the upstream
+[integration blueprint](https://github.com/jpawlowski/hacs.integration_blueprint) share a substantial
+development environment: the DevContainer, the agent runtime configuration, the generic scripts, and the linter
+configuration. Measured at the time of the split, 38 files were byte-identical. Maintaining them twice invites
+drift; the obvious alternatives were a third "chassis" repository or declaring one repository leading.
+
+**Decision:** The integration blueprint is leading for the shared files. This repository pulls them via
+`script/chassis-sync`, driven by an explicit allowlist in `.github/chassis-manifest.txt`. A blueprint author's
+own repository does not participate — `initialize.sh` removes the chassis sync, and the author receives those
+files through the normal template sync from here.
+
+**Rationale:**
+
+- A third repository would mean three places to change, plus versioning and releasing the chassis itself — real
+  overhead for ~38 files that change rarely
+- The integration blueprint is where this tooling originated and where it is exercised most
+- The two-hop chain works because both hops already have a sync mechanism; only the file list differs
+- An allowlist is the only safe direction: a denylist would silently pull in every new integration-specific
+  file the upstream adds
+
+**Consequences:**
+
+- Chassis files must not be edited here; the pull-request check enforces that
+- A file that needs blueprint-specific content is removed from the manifest and owned here instead
+- Manifest entries are verified: an entry that no longer exists upstream fails the sync rather than being
+  skipped
+- Author repositories are unaffected — they never see the upstream integration blueprint
+
+---
+
 ### Single Home Assistant version across all tooling
 
 **Date:** Template initialization
@@ -151,18 +185,23 @@ blueprint's `source_url` as the import URL. No `hacs.json`, no HACS validation w
 **Context:** The schema validator, the test runtime, the DevContainer, and CI each need a Home Assistant
 version.
 
-**Decision:** `.ha-version` is the single source, read by bootstrap and the workflows.
-`script/ha-version-sync` enforces that it, `pytest-homeassistant-custom-component`, and any
-`.devcontainer/.env` override target the same release train, and that no workflow hardcodes a version.
+**Decision:** `HA_VERSION` in `.devcontainer/.env` is the single source, read by bootstrap and the workflows.
+`script/ha-version-sync` enforces that it and `pytest-homeassistant-custom-component` target the same release
+train, and that no workflow hardcodes a version.
 
 **Rationale:**
 
 - The validator and the test runtime must be the same Home Assistant, or a blueprint could validate against one
   version and be tested against another
-- `.ha-version` replaces the integration template's `hacs.json`, which does not apply here
+- The integration template used `hacs.json` for this, but only because HACS required that file; with HACS gone
+  there is no reason to invent a replacement file when the project already has a committed environment file
+- Symbolic values (`latest`, `beta`) are warned about rather than silently skipped: while one is committed,
+  nothing verifies that the test framework agrees with it
 - A pre-commit hook catches drift before it reaches CI
 
 **Consequences:**
 
 - Bumping Home Assistant means editing two files in one commit
 - `.devcontainer/.env.local` stays exempt, so testing against a beta locally does not fight the check
+- `.env` files are agent-protected in this project's Claude Code settings, so an agent can propose a version
+  bump but not apply it — deliberate, given the same file would hold secrets in other projects

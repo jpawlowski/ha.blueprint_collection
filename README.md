@@ -122,8 +122,7 @@ paste the output into your README so users can import with one click.
 - **Validate** workflow — blueprint schema check + test suite on every push and PR, plus a nightly run
 - **Lint** workflow — Ruff, yamllint, shellcheck/shfmt, Prettier, markdownlint
 - **release-please** — Conventional Commits → CHANGELOG and version tags
-- **HA version sync** — keeps `.ha-version`, `pytest-homeassistant-custom-component`, and the DevContainer pin on
-  the same release train
+- **HA version sync** — keeps `HA_VERSION` and `pytest-homeassistant-custom-component` on the same release train
 - **Template sync** — pull improvements from this template into your collection later
 
 ## Development Guide
@@ -173,7 +172,7 @@ docs/
   instructions/                # Path-specific AI agent instructions
   prompts/                     # Reusable agent prompts
   workflows/                   # CI
-.ha-version                    # Pinned Home Assistant release train
+.devcontainer/.env             # HA_VERSION — the pinned Home Assistant version
 ```
 
 The author subfolder matters: Home Assistant mirrors it under `config/blueprints/<domain>/` on the user's
