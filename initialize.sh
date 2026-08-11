@@ -399,25 +399,30 @@ if [[ -f ".release-please-manifest.json" && "$DRY_RUN" != true ]]; then
     print_step "Reset version to 0.1.0"
 fi
 
-# 5. Remove the chassis sync
+# 5. Remove the upstream syncs
 #
 # The collection template pulls its shared development environment from the
-# upstream integration blueprint. Your repository does not: it syncs from the
-# collection template via .github/workflows/template-sync.yml, which already
-# carries those files along. Keeping the chassis sync here would mean two
+# upstream integration blueprint, and vendored agent-skill material from
+# third-party skill repositories. Your repository does neither: it syncs from
+# the collection template via .github/workflows/template-sync.yml, which
+# already carries all of those files along. Keeping these syncs here would mean
 # unrelated repositories opening pull requests against yours.
-readonly -a CHASSIS_FILES=(
+#
+# script/skills-sync is kept — it still verifies the vendored files you
+# received, and restores one if it gets edited by accident.
+readonly -a UPSTREAM_SYNC_FILES=(
     ".github/workflows/chassis-sync.yml"
     ".github/chassis-manifest.txt"
     "script/chassis-sync"
+    ".github/workflows/skills-sync.yml"
 )
-for chassis_file in "${CHASSIS_FILES[@]}"; do
-    [[ -e "$chassis_file" ]] || continue
+for upstream_sync_file in "${UPSTREAM_SYNC_FILES[@]}"; do
+    [[ -e "$upstream_sync_file" ]] || continue
     if [[ "$DRY_RUN" == true ]]; then
-        print_step "Would remove: $chassis_file"
+        print_step "Would remove: $upstream_sync_file"
     else
-        rm -f "$chassis_file"
-        print_step "Removed: $chassis_file"
+        rm -f "$upstream_sync_file"
+        print_step "Removed: $upstream_sync_file"
     fi
 done
 

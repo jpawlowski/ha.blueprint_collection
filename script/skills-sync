@@ -1,0 +1,273 @@
+#!/bin/bash
+
+# script/skills-sync: Sync vendored third-party agent skill files
+#
+# Some reference material under .agents/skills/ is maintained in other
+# repositories and vendored here verbatim, so this collection benefits from
+# upstream maintenance without owning the content. The sources, the pinned
+# commits, and the file mappings live in .github/skills-manifest.txt.
+#
+# Vendored files must never be edited here — --check fails when they differ
+# from the pinned commit. Local commentary belongs in the wrapper SKILL.md next
+# to the vendor/ directory.
+#
+# Usage:
+#   ./script/skills-sync [--check] [--update [REF]]
+#
+# Options:
+#   --check         Report drift against the pinned commits and exit non-zero;
+#                   do not modify any file
+#   --update [REF]  Move the pin to REF (default: the upstream default branch)
+#                   and pull the files. Rewrites the manifest.
+#
+# Examples:
+#   ./script/skills-sync --check      # Was a vendored file edited locally?
+#   ./script/skills-sync              # Restore the pinned state
+#   ./script/skills-sync --update     # Adopt the latest upstream, for review
+#
+# Environment:
+#   SKILLS_LOCAL_SOURCE  Use an existing local checkout instead of cloning.
+#                        Only valid when the manifest has a single UPSTREAM.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# shellcheck source=script/.lib/output.sh
+source "$SCRIPT_DIR/.lib/output.sh"
+
+MANIFEST=".github/skills-manifest.txt"
+CHECK_ONLY=false
+UPDATE=false
+UPDATE_REF=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+    --check)
+        CHECK_ONLY=true
+        shift
+        ;;
+    --update)
+        UPDATE=true
+        shift
+        if [[ $# -gt 0 && "$1" != --* ]]; then
+            UPDATE_REF="$1"
+            shift
+        fi
+        ;;
+    *)
+        log_error "Unknown option: $1"
+        echo "Usage: script/skills-sync [--check] [--update [REF]]"
+        exit 1
+        ;;
+    esac
+done
+
+if [[ "$CHECK_ONLY" == true && "$UPDATE" == true ]]; then
+    die "--check and --update are mutually exclusive"
+fi
+
+# No manifest means this repository vendors nothing — a valid state, not an error.
+# The script is generic and ships to repositories that may never vendor a skill,
+# so it must be a clean no-op there rather than a failing check in their CI.
+if [[ ! -f "$MANIFEST" ]]; then
+    log_header "Checking vendored skill files"
+    log_info "No $MANIFEST — nothing is vendored in this repository"
+    exit 0
+fi
+
+# An explicit REF names a commit in one specific repository, so it is only
+# meaningful while the manifest tracks exactly one upstream.
+if [[ -n "$UPDATE_REF" ]]; then
+    upstream_count=$(grep -cE '^[[:space:]]*UPSTREAM[[:space:]]' "$MANIFEST" || true)
+    if [[ "$upstream_count" -ne 1 ]]; then
+        die "--update REF needs exactly one UPSTREAM in $MANIFEST (found $upstream_count)"
+    fi
+fi
+
+run_hook "skills-sync" "pre"
+
+# ── Cleanup ──────────────────────────────────────────────────────────────────
+CLONE_DIR=""
+# Must always succeed: this runs as the EXIT trap, and a non-zero status here
+# would leak into the script's own exit code.
+# shellcheck disable=SC2317  # invoked indirectly via trap
+cleanup() {
+    if [[ -n "$CLONE_DIR" && -d "$CLONE_DIR" ]]; then
+        rm -rf "$CLONE_DIR"
+    fi
+    return 0
+}
+trap cleanup EXIT
+
+# ── Obtain an upstream tree at a given ref ───────────────────────────────────
+# Sets SOURCE_DIR and RESOLVED_REF.
+fetch_upstream() {
+    local upstream="$1" ref="$2" url
+
+    if [[ -n "${SKILLS_LOCAL_SOURCE:-}" ]]; then
+        [[ -d "$SKILLS_LOCAL_SOURCE" ]] ||
+            die "SKILLS_LOCAL_SOURCE is not a directory: $SKILLS_LOCAL_SOURCE"
+        SOURCE_DIR="$SKILLS_LOCAL_SOURCE"
+        RESOLVED_REF=$(git -C "$SOURCE_DIR" rev-parse HEAD)
+        log_info "Source: $SOURCE_DIR (local checkout, $RESOLVED_REF)"
+        return 0
+    fi
+
+    if [[ "$upstream" == http*://* || "$upstream" == git@* ]]; then
+        url="$upstream"
+    else
+        url="https://github.com/${upstream}.git"
+    fi
+
+    cleanup
+    CLONE_DIR=$(mktemp -d)
+    SOURCE_DIR="$CLONE_DIR"
+
+    if [[ -n "$ref" ]]; then
+        # A pinned commit is not directly cloneable — fetch it explicitly.
+        git -C "$CLONE_DIR" init --quiet
+        git -C "$CLONE_DIR" remote add origin "$url"
+        git -C "$CLONE_DIR" fetch --quiet --depth 1 origin "$ref" ||
+            die "Failed to fetch ${url} at ref ${ref}"
+        git -C "$CLONE_DIR" checkout --quiet FETCH_HEAD
+    else
+        git clone --quiet --depth 1 "$url" "$CLONE_DIR" ||
+            die "Failed to clone ${url}"
+    fi
+
+    RESOLVED_REF=$(git -C "$CLONE_DIR" rev-parse HEAD)
+    log_info "Upstream: ${url} (${RESOLVED_REF})"
+}
+
+# ── Walk the manifest ────────────────────────────────────────────────────────
+log_header "Checking vendored skill files"
+
+upstream=""
+pinned_ref=""
+SOURCE_DIR=""
+RESOLVED_REF=""
+new_manifest=$(mktemp)
+changed=0
+missing=0
+unchanged=0
+
+flush_ref_line() {
+    # Called for every REF line: write the pin that should end up in the
+    # manifest. Only --update moves it.
+    if [[ "$UPDATE" == true ]]; then
+        printf 'REF %s\n' "$RESOLVED_REF" >>"$new_manifest"
+    else
+        printf 'REF %s\n' "$pinned_ref" >>"$new_manifest"
+    fi
+}
+
+while IFS= read -r line || [[ -n "$line" ]]; do
+    stripped="${line%%#*}"
+    stripped="$(echo "$stripped" | xargs 2>/dev/null || true)"
+
+    if [[ -z "$stripped" ]]; then
+        printf '%s\n' "$line" >>"$new_manifest"
+        continue
+    fi
+
+    case "$stripped" in
+    UPSTREAM\ *)
+        upstream="${stripped#UPSTREAM }"
+        printf '%s\n' "$line" >>"$new_manifest"
+        ;;
+    REF\ *)
+        pinned_ref="${stripped#REF }"
+        if [[ "$UPDATE" == true ]]; then
+            fetch_upstream "$upstream" "$UPDATE_REF"
+        else
+            fetch_upstream "$upstream" "$pinned_ref"
+        fi
+        flush_ref_line
+        ;;
+    *\ -\>\ *)
+        [[ -n "$SOURCE_DIR" ]] || die "File mapping before UPSTREAM/REF in $MANIFEST: $stripped"
+        printf '%s\n' "$line" >>"$new_manifest"
+
+        src="${stripped%% -> *}"
+        dest="${stripped##* -> }"
+        src_path="$SOURCE_DIR/$src"
+
+        if [[ ! -f "$src_path" ]]; then
+            log_result 1 "Missing upstream: $src"
+            missing=$((missing + 1))
+            continue
+        fi
+
+        if [[ -f "$dest" ]] && cmp -s "$dest" "$src_path"; then
+            unchanged=$((unchanged + 1))
+            continue
+        fi
+
+        changed=$((changed + 1))
+        if [[ "$CHECK_ONLY" == true ]]; then
+            log_result 1 "Out of sync: $dest"
+        else
+            mkdir -p "$(dirname "$dest")"
+            cp "$src_path" "$dest"
+            log_result 0 "Updated: $dest"
+        fi
+        ;;
+    *)
+        die "Unrecognized line in $MANIFEST: $stripped"
+        ;;
+    esac
+done <"$MANIFEST"
+
+if [[ "$UPDATE" == true ]]; then
+    mv "$new_manifest" "$MANIFEST"
+else
+    rm -f "$new_manifest"
+fi
+
+echo ""
+log_info "In sync: $unchanged | Differing: $changed | Missing upstream: $missing"
+
+# A mapping whose source no longer exists upstream means the file was renamed or
+# removed there, so this repository is keeping a copy nobody maintains — which
+# defeats the entire reason for vendoring it.
+if [[ $missing -gt 0 ]]; then
+    echo ""
+    log_error "$missing manifest mapping(s) no longer exist upstream"
+    log_info "Update the path in $MANIFEST, or take ownership of the content here"
+    exit 1
+fi
+
+if [[ "$CHECK_ONLY" == true ]]; then
+    if [[ $changed -gt 0 ]]; then
+        echo ""
+        log_error "Vendored skill files differ from their pinned commit ($changed file(s))"
+        log_info "Vendored files must not be edited here. Restore them with ${BOLD}script/skills-sync${NC}"
+        log_info "To adopt a newer upstream instead: ${BOLD}script/skills-sync --update${NC}"
+        exit 1
+    fi
+    log_success "Vendored skill files match their pinned commit"
+elif [[ "$UPDATE" == true ]]; then
+    if [[ $changed -gt 0 ]]; then
+        echo ""
+        log_success "Updated $changed vendored file(s) and moved the pin"
+        log_info "Review with ${BOLD}git diff${NC} — upstream framing may conflict with this collection"
+        log_info "Then update the wrapper SKILL.md overrides if needed and run ${BOLD}script/check${NC}"
+    else
+        log_success "Already at the latest upstream"
+    fi
+else
+    if [[ $changed -gt 0 ]]; then
+        echo ""
+        log_success "Restored $changed vendored file(s) to the pinned commit"
+    else
+        log_success "Vendored skill files are already in sync"
+    fi
+fi
+
+run_hook "skills-sync" "post"
+
+# Explicit: run_hook's last evaluated expression is a failing [[ -f ]] test when
+# no hook exists, which would otherwise become this script's exit status.
+exit 0

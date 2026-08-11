@@ -1,0 +1,53 @@
+# Vendored Agent Skill Files
+# ============================================================
+# Third-party skill reference material vendored verbatim into .agents/skills/.
+#
+# Read by script/skills-sync and .github/workflows/skills-sync.yml.
+#
+# Why vendor instead of installing the upstream skill:
+#   The upstream skill is monolithic — installing it also brings dashboards,
+#   AppDaemon, helper selection, and scene guidance that this collection has no
+#   use for. More importantly, its own SKILL.md tells agents to prefer the Home
+#   Assistant config API and UI helpers over writing YAML, which is the exact
+#   opposite of what a blueprint collection does. Vendoring takes the reference
+#   material without the framing; the wrapper SKILL.md next to each vendored
+#   file states the overrides.
+#
+# Rules for vendored files:
+#   - NEVER edit them here. They must stay byte-identical to the pinned ref,
+#     and `script/skills-sync --check` fails otherwise. Corrections belong
+#     upstream; local commentary belongs in the wrapper SKILL.md.
+#   - They are excluded from Prettier and markdownlint for the same reason
+#     (see .prettierignore and .markdownlint-cli2.jsonc).
+#   - Every source repository needs its LICENSE vendored alongside.
+#
+# Updating:
+#   script/skills-sync --update      # move the pin to upstream HEAD and pull
+#   script/skills-sync --check       # verify local copies match the pin
+#
+# The scheduled workflow runs --update and opens a pull request, so an upstream
+# change is reviewed here before it lands.
+#
+# Format:
+#   UPSTREAM <owner/repo or URL>     Source repository for the entries below
+#   REF <commit>                     Pinned commit (full SHA — not a branch)
+#   <upstream path> -> <local path>  One file mapping per line
+#
+# initialize.sh removes the scheduled sync workflow, because a blueprint author's
+# own repository receives the vendored files through template-sync from THIS
+# repository rather than tracking the third-party upstream itself. This manifest
+# and script/skills-sync are kept there: --check still verifies the vendored
+# files, and a plain run restores one that was edited by accident.
+# ============================================================
+
+# ── homeassistant-ai/skills (MIT) ────────────────────────────
+# Home Assistant automation building blocks: native triggers and conditions
+# (including the 2026.7 purpose-specific family), wait actions, automation
+# modes, variables, repeat/choose, trigger IDs. Actively maintained and quick to
+# track Home Assistant release changes — which is precisely the material this
+# collection does not want to own itself.
+UPSTREAM homeassistant-ai/skills
+REF 9e4eff281112218953dc708687d24601777f9ccb
+
+LICENSE -> .agents/skills/ha-automation-patterns/vendor/LICENSE
+skills/home-assistant-best-practices/references/automation-patterns.md -> .agents/skills/ha-automation-patterns/vendor/automation-patterns.md

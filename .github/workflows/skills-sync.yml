@@ -1,0 +1,102 @@
+# Skills Sync
+#
+# Keeps the third-party skill reference material vendored under .agents/skills/
+# in step with its upstream repositories. Sources, pinned commits, and file
+# mappings live in .github/skills-manifest.txt.
+#
+# Vendored files are byte-identical to a pinned commit and must never be edited
+# here — the pull request check enforces that. The scheduled job moves the pin
+# to the latest upstream and opens a pull request, so upstream changes are
+# reviewed before they land.
+#
+# This workflow belongs to the collection template only. initialize.sh removes
+# it, because a blueprint author's own repository receives the vendored files
+# through .github/workflows/template-sync.yml rather than tracking the
+# third-party upstream itself.
+
+name: Skills Sync
+
+on:
+  schedule:
+    # Every Monday at 05:30 UTC — before chassis-sync and template-sync, so a
+    # vendored skill update propagates onward in the same weekly cycle.
+    - cron: "30 5 * * 1"
+  workflow_dispatch:
+  # Every pull request, deliberately: the check must catch a vendored file being
+  # edited here instead of upstream, and which files those are is defined by the
+  # manifest — a static paths filter here would drift from it.
+  pull_request:
+
+permissions: {}
+
+jobs:
+  # On pull requests: fail if a vendored file no longer matches its pinned commit.
+  check:
+    name: Check vendored skill files
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify vendored files match their pinned commit
+        run: script/skills-sync --check
+
+  # On schedule/dispatch: move the pin to the latest upstream and open a PR.
+  sync:
+    name: Update vendored skill files
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Update vendored files and pin
+        run: script/skills-sync --update
+
+      - name: Open or update pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "Vendored skill files are already up to date — nothing to do."
+            exit 0
+          fi
+
+          BRANCH="skills-sync"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B "$BRANCH"
+          git add -A
+          git commit -m "chore(skills): update vendored skill files from upstream" \
+                     -m "Vendored verbatim according to .github/skills-manifest.txt."
+          git push --force origin "$BRANCH"
+
+          if gh pr view "$BRANCH" --json number >/dev/null 2>&1; then
+            echo "Existing pull request updated."
+          else
+            gh pr create \
+              --base "$DEFAULT_BRANCH" \
+              --head "$BRANCH" \
+              --title "chore(skills): update vendored skill files from upstream" \
+              --body "Automated update of the third-party skill reference material
+          vendored under \`.agents/skills/\`, according to \`.github/skills-manifest.txt\`.
+
+          **Review the diff for framing that conflicts with this collection.** The upstream
+          skills are written for managing a live Home Assistant instance and occasionally
+          tell agents to prefer the config API or UI helpers over writing YAML — the
+          opposite of what a blueprint collection does. Those statements are neutralised in
+          the wrapper \`SKILL.md\` next to each \`vendor/\` directory, which may need
+          updating when upstream adds more of them.
+
+          Then run \`script/check\` before merging."
+          fi
