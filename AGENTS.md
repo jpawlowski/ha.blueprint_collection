@@ -26,6 +26,7 @@ collection template and ships a complete development and test environment.
 - `config/` - Home Assistant configuration for local testing
 - `tests/` - Runtime tests that instantiate the blueprints in an in-memory HA instance
 - `script/` - Development and validation scripts
+- `.agents/skills/` - Agent skills, shared by all agents (see [Agent Skills](#agent-skills))
 
 **Local Home Assistant instance:**
 
@@ -68,6 +69,33 @@ visible — but automations/scripts created from a blueprint cache their configu
 
 If you're using GitHub Copilot, path-specific instructions in `.github/instructions/*.instructions.md` provide additional guidance for specific file types (blueprints, Python tests, YAML, etc.). This document serves as the primary reference for all agents.
 
+## Agent Skills
+
+Deep, task-scoped guidance lives in [`.agents/skills/`](.agents/skills/README.md) — loaded on
+demand, so it can go into detail without costing context on every turn. Read the matching
+skill **before** starting work in its area:
+
+| Task                                                                                               | Skill                                                                      |
+| -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Writing, changing, or reviewing a blueprint — selectors, triggers, templating, `min_version`       | [`ha-blueprint-authoring`](.agents/skills/ha-blueprint-authoring/SKILL.md) |
+| Looking up the exact YAML for a Home Assistant trigger, condition, wait, or control-flow construct | [`ha-automation-patterns`](.agents/skills/ha-automation-patterns/SKILL.md) |
+| Runtime tests in `tests/`                                                                          | [`ha-blueprint-testing`](.agents/skills/ha-blueprint-testing/SKILL.md)     |
+| Releases, release notes, import links, community publication                                       | [`ha-blueprint-release`](.agents/skills/ha-blueprint-release/SKILL.md)     |
+
+Each skill is a short `SKILL.md` plus `references/` files read only when a task touches
+their area. `.agents/skills/` is the cross-agent convention: Copilot and Codex read it
+directly, and `.claude/skills` is a symlink to it for Claude Code. One copy, every agent.
+
+`ha-automation-patterns` is **vendored verbatim** from an upstream repository and pinned in
+`.github/skills-manifest.txt`. Never edit anything under a `vendor/` directory —
+`script/skills-sync --check` fails on any local change. Where it disagrees with
+`ha-blueprint-authoring`, the authoring skill wins: it was verified against the Home
+Assistant version pinned here.
+
+**The skills are the single source for how to author and test blueprints.** This document
+keeps the non-negotiable rules so they are always in context; anything beyond them belongs
+in a skill, not here.
+
 **Other agent entry points:**
 
 - **Claude Code:** See [`CLAUDE.md`](CLAUDE.md) (pointer to this file)
@@ -103,11 +131,15 @@ If a developer requests something that contradicts these instructions:
 
 ### Documentation vs. Instructions
 
-**Three types of content with clear separation:**
+**Four types of content with clear separation:**
 
-1. **Agent Instructions** - How AI should write blueprints and tests (`.github/instructions/`, `AGENTS.md`)
-2. **Developer Documentation** - Architecture and design decisions (`docs/development/`)
-3. **User Documentation** - End-user guides and import instructions (`docs/user/`, `README.md`)
+1. **Agent Instructions** - Always-in-context rules (`AGENTS.md`, `.github/instructions/`)
+2. **Agent Skills** - On-demand depth: how to author, test, and release blueprints (`.agents/skills/`)
+3. **Developer Documentation** - Architecture and design decisions (`docs/development/`)
+4. **User Documentation** - End-user guides and import instructions (`docs/user/`, `README.md`)
+
+**One fact lives in one place.** A rule about blueprint authoring belongs in the skill, and the other files link
+to it. Duplicating it means one copy will be wrong within a release.
 
 **AI Planning:** Use `.ai-scratch/` for temporary notes (never committed)
 
@@ -178,30 +210,30 @@ Every blueprint MUST declare in its `blueprint:` block:
   version (`HA_VERSION` in `.devcontainer/.env`),
   otherwise CI cannot validate the blueprint.
 
-### Inputs and Selectors
+### Inputs, Selectors, and Logic
 
-- Every configurable value MUST be an `input` with `name`, `description`, and a `selector` — never free-text where a
-  typed selector exists ([selector docs](https://www.home-assistant.io/docs/blueprint/selectors/))
+The non-negotiables — full guidance in
+[`ha-blueprint-authoring`](.agents/skills/ha-blueprint-authoring/SKILL.md):
+
+- Every configurable value MUST be an `input` with `name`, `description`, and a typed `selector` — never free text
+  where a selector exists. Filter `entity`/`target` selectors by `domain` and `device_class`
 - Reference inputs with `!input <key>`. Every declared input must be used; every `!input` must be declared
   (`script/blueprint-check` enforces both)
-- Provide sensible `default` values wherever possible — an importable blueprint that works with minimal configuration
-  gets used, one with ten mandatory fields does not
-- Prefer `entity`/`target` selectors with `filter:` (domain, device_class) over unfiltered pickers
-- Never hardcode entity IDs, areas, or devices in the logic — that is what inputs are for
-- Group many inputs with input `sections` (requires `min_version` >= 2024.6.0); mark advanced ones `collapsed: true`
-- To use an input inside a Jinja template, assign it to a variable first
-  (`variables: { my_var: !input my_input }`) — `!input` does not work inside template strings
-
-### Blueprint Logic
-
-- Use modern syntax: `triggers:`/`conditions:`/`actions:` with `trigger:`/`condition:`/`action:` keys
-  (not the legacy `platform:`/`service:` spellings)
-- Choose the automation `mode` deliberately (`single`, `restart`, `queued`, `parallel`) and document why when it is
-  not obvious; `restart` + `max_exceeded: silent` is the usual choice for motion/presence patterns
+- **`!input` does not work inside Jinja** — assign to a variable first
+  (`variables: { my_var: !input my_input }`)
+- Provide sensible `default` values wherever possible; every input in a `collapsed: true` section needs one
+- Never hardcode entity IDs, areas, or devices — that is what inputs are for
 - Reference entities via `entity_id`, never `device_id`, so blueprints survive device replacement
+- Modern syntax only: `triggers:`/`conditions:`/`actions:` with `trigger:`/`condition:`/`action:` keys
+  (not legacy `platform:`/`service:`)
+- **Prefer the purpose-specific triggers and conditions** introduced in HA 2026.7
+  (`motion.detected`, `light.is_on`) with a `target:` — they require `min_version: 2026.7.0`, which is a
+  deliberate trade-off; see the skill's `references/triggers-conditions.md`
+- Choose the automation `mode` deliberately and document why when it is not obvious; `restart` +
+  `max_exceeded: silent` is the usual choice for motion/presence patterns
 - Keep one blueprint per file and one concern per blueprint — compose instead of building a mega-blueprint
-- Template blueprints: the top-level keys after `blueprint:`/`variables:` are the template entity definition
-  (`binary_sensor:`, `sensor:`, ...); users set `name:`/`unique_id:` on their `use_blueprint` instance
+- Template blueprints: the top-level keys after `blueprint:`/`variables:` are the template entity definition;
+  users set `name:`/`unique_id:` on their `use_blueprint` instance
 
 ### Breaking Changes
 
@@ -282,18 +314,18 @@ Blueprints are tested at **runtime**, not just schema-checked: each test copies 
 Assistant instance (via the `install_blueprint` fixture in `tests/conftest.py`), instantiates it with
 `use_blueprint`, and asserts real behavior — triggers firing, service calls, template states.
 
-**Patterns to reuse (see the existing tests):**
-
-- `async_mock_service(hass, domain, service)` to capture service calls
-- `hass.states.async_set(...)` to simulate triggers
-- `freezer.tick(...)` + `async_fire_time_changed(hass)` to advance through `delay:`/`for:` waits
-  (`tests/test_script_flash_light.py`)
-- A short "settle" loop of `asyncio.sleep(0)` instead of `async_block_till_done()` while a run is suspended in
-  `wait_for_trigger` or a delay — `block_till_done` would wait for the whole run and hang the test
-  (`tests/test_automation_motion_light.py`)
-
 **Every blueprint in this collection must have at least one runtime test** covering its happy path; behavior changes
 and bug fixes need a test that would have caught the bug.
+
+The three rules that cause most failures — full patterns and troubleshooting in
+[`ha-blueprint-testing`](.agents/skills/ha-blueprint-testing/SKILL.md):
+
+- Register `async_mock_service(hass, domain, service)` **before** triggering, or the call is made for real and
+  never captured
+- Never sleep in real time — `freezer.tick(...)` + `async_fire_time_changed(hass)` to advance through
+  `delay:`/`for:` waits
+- `async_block_till_done()` hangs on a run suspended in `wait_for_trigger` or a delay; use a short settle loop of
+  `asyncio.sleep(0)` instead, and only block when the run can actually complete
 
 **Running tests:**
 

@@ -61,6 +61,20 @@ changes when they re-import — say so in release notes. Use a `BREAKING CHANGE:
   without an explicit request
 - **Temporary notes:** `.ai-scratch/` (never committed); never create stray markdown files
 
+## Agent Skills
+
+On-demand depth lives in `.agents/skills/`, which Copilot discovers natively alongside `.github/skills` and
+`.claude/skills`. Shared with every other agent — one copy, no duplication:
+
+- `ha-blueprint-authoring` — selectors, triggers/conditions incl. the 2026.7 purpose-specific ones, templating,
+  per-domain bodies, the `min_version` matrix, known pitfalls, live debugging
+- `ha-automation-patterns` — broad catalogue of HA triggers, conditions, waits, modes, control flow.
+  Vendored verbatim from upstream and pinned in `.github/skills-manifest.txt` — never edit `vendor/`
+- `ha-blueprint-testing` — runtime test recipes and troubleshooting
+- `ha-blueprint-release` — versioning, user-facing release notes, import links, publication
+
+Read the matching skill before non-trivial work; each starts with a routing table to its `references/` files.
+
 ## Path-Specific Instructions
 
 - `blueprint.ha_blueprints.instructions.md` — Blueprint authoring (schema, inputs, selectors, modes)
