@@ -152,3 +152,5 @@ and release notes exist to tell users _when to re-import_ and _what changed_ —
 - [RELEASE.md](RELEASE.md) — versioning and releases
 - [CUSTOMIZATION.md](CUSTOMIZATION.md) — adapting the template
 - [DECISIONS.md](DECISIONS.md) — why things are the way they are
+- [SKILLS_UPSTREAM.md](SKILLS_UPSTREAM.md) — agent-skill layout, and what the upstream chassis
+  should own once it adopts one
