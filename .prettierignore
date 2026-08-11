@@ -2,6 +2,14 @@
 config/
 !config/configuration.yaml
 
+# Claude Code's symlink to .agents/skills/ — the same files reached by a second
+# path. Format them via .agents/skills/ only.
+.claude/skills/
+
+# Third-party files vendored verbatim — must match their pinned upstream commit
+# (script/skills-sync --check), so they must not be reformatted here.
+.agents/skills/*/vendor/
+
 # Auto-generated release files
 CHANGELOG.md
 
