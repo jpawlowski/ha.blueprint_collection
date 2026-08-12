@@ -146,6 +146,9 @@ blueprint's `source_url` as the import URL. No `hacs.json`, no HACS validation w
 
 ### One leading repository for the shared chassis, not a third repository
 
+> **Superseded on 2026-08-12** — see "Retire the chassis sync" at the end of this log. Kept because the
+> reasoning still explains why the shared files look the way they do.
+
 **Date:** Template initialization
 
 **Context:** This template and the upstream
@@ -205,3 +208,46 @@ train, and that no workflow hardcodes a version.
 - `.devcontainer/.env.local` stays exempt, so testing against a beta locally does not fight the check
 - `.env` files are agent-protected in this project's Claude Code settings, so an agent can propose a version
   bump but not apply it — deliberate, given the same file would hold secrets in other projects
+
+---
+
+### Retire the chassis sync
+
+**Date:** 2026-08-12
+
+**Context:** The chassis sync pulled ~38 shared development files from the upstream
+[integration blueprint](https://github.com/jpawlowski/hacs.integration_blueprint), enforced by an allowlist and
+a pull-request drift check. It worked while both repositories stayed close. They then diverged: upstream
+restructured its whole agent configuration, and the check went from `Differing: 0` to 16 differing files at
+once. Merging that back was not a sync but a migration with naming and layout decisions attached — the
+`blueprint-*` prefix alone contradicts this repository's own terminology rule.
+
+At the same time the sync was becoming a poor fit in the other direction. Several files needed
+blueprint-specific content and had to be removed from the manifest anyway: the instruction files, `script/lint`
+and `script/lint-check`. The list of genuinely shared, genuinely unchanged files was shrinking on its own.
+
+**Decision:** Remove `script/chassis-sync`, `.github/chassis-manifest.txt` and
+`.github/workflows/chassis-sync.yml`. Every file in this repository is now owned here. Improvements from
+upstream are adopted by hand, as a deliberate act, after someone has read them.
+
+The useful part of upstream's agent layer was ported this way on the same day — see
+[SKILLS_UPSTREAM.md](SKILLS_UPSTREAM.md) for what was taken, what was rewritten, and what was left behind.
+
+**Rationale:**
+
+- A sync whose diff has to be hand-resolved every time is a manual port with extra steps, plus a red CI check
+- The two repositories now build different things. Upstream's "blueprint" is an integration template; this
+  repository's is a Home Assistant blueprint. Shared vocabulary was the last thing holding the sync together
+- Byte-identity is the wrong constraint for files that legitimately need local content — every exception had to
+  be argued and removed from the manifest individually
+- Adopting by hand is what actually happened in practice even while the sync existed
+
+**Consequences:**
+
+- DevContainer and linter improvements from upstream no longer arrive automatically. Nothing watches for them;
+  someone has to go and look, and that will sometimes not happen
+- The `.templatesyncignore` entries and the `initialize.sh` removal block for the chassis files are gone, so an
+  author's repository no longer carries dead references to a mechanism it never had
+- `script/skills-sync` is unaffected. It syncs vendored third-party material, not chassis files, and remains
+  the one inbound mechanism with an enforced byte-identity guarantee
+- If sharing becomes worth automating again, it should be re-argued from scratch rather than restored

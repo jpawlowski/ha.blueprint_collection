@@ -121,53 +121,40 @@ identity files, and configuration you have customized. Add anything else you wan
 
 To stop syncing entirely, delete `.github/workflows/template-sync.yml`.
 
-## Chassis sync (collection template only)
+## Vendored skill files
 
-> [!NOTE]
-> This section applies to the collection **template** repository. `initialize.sh` removes the chassis sync from
-> your own repository — you receive these files through the normal template sync above.
-
-The shared development environment (DevContainer, agent runtime, generic scripts, linter configuration) is not
-maintained twice. The upstream
-[integration blueprint](https://github.com/jpawlowski/hacs.integration_blueprint) is the **leading** repository
-for those files; the collection template pulls them in:
-
-```text
-hacs.integration_blueprint  ──chassis-sync──▶  ha.blueprint_collection  ──template-sync──▶  your collection
-      (leading for the chassis)                  (leading for blueprints)
-```
-
-The file list is an explicit **allowlist** in `.github/chassis-manifest.txt` — never a denylist, because a
-denylist would silently pull in every new integration-specific file the upstream adds. Adding an entry is a
-deliberate statement that the file is generic and identical in both repositories.
+Third-party agent-skill material lives under `.agents/skills/*/vendor/`, copied verbatim and pinned to a commit
+in `.github/skills-manifest.txt`. This is the one thing in the repository that is **not** yours to edit:
 
 ```bash
-script/chassis-sync --check    # Is anything out of date? (exit 1 if yes)
-script/chassis-sync            # Apply upstream changes to the working tree
+script/skills-sync --check          # Do the vendored files still match the pin?
+script/skills-sync                  # Restore the pinned state
+script/skills-sync --update <ref>   # Move the pin, for review
 ```
 
-`.github/workflows/chassis-sync.yml` runs the check on every pull request — so a chassis file edited here
-instead of upstream fails CI — and opens a pull request weekly when upstream has moved on.
+A local edit — including one a formatter made — breaks the byte-identity the check depends on, and CI fails on
+every pull request until it is restored. Anything you want to say about vendored material goes in the wrapper
+`SKILL.md` beside it.
 
-**When a chassis file needs blueprint-specific content:** remove it from the manifest and own it here. That is
-the intended escape hatch, not an exception. `.markdownlint-cli2.jsonc` is the existing example — upstream
-excludes a HACS directory that does not exist here.
-
-**When an entry disappears upstream** (renamed or deleted), `script/chassis-sync` fails rather than skipping it,
-because the alternative is quietly keeping a copy nobody maintains.
+`initialize.sh` removes `.github/workflows/skills-sync.yml` from your repository: you receive the vendored files
+through the normal template sync above, and your repository should not open pull requests against a third-party
+upstream. The script and the manifest stay, so `--check` still protects the files you received.
 
 ## AI agent instructions
 
 Adjust these as your collection develops conventions:
 
-- `AGENTS.md` — the primary reference, read by all agents
-- `.github/copilot-instructions.md` — compact version for Copilot
-- `.github/instructions/*.instructions.md` — path-scoped rules, applied by `applyTo` glob
+- `AGENTS.md` — the primary reference, read natively by Codex, Copilot and VS Code
+- `CLAUDE.md` — a one-line `@AGENTS.md` import plus what is specific to Claude Code
+- `.agents/instructions/*.instructions.md` — path-scoped rules, applied by `applyTo` / `paths`
 - `.github/prompts/*.prompt.md` — reusable prompts
 
-`AGENTS.md`, `CLAUDE.md`, `CODEX.md`, and `copilot-instructions.md` are in `.templatesyncignore` because they
-carry your project identity. The path-specific instruction files use generic placeholders and _are_ synced —
-move a file out of `.github/instructions/` if you want to own it.
+`AGENTS.md` and `CLAUDE.md` are in `.templatesyncignore` because they carry your project identity. Everything
+under `.agents/` uses generic placeholders and _is_ synced — move a file out of `.agents/instructions/` if you
+want to own it.
+
+There is deliberately no `CODEX.md` and no `.github/copilot-instructions.md`. Both agents read `AGENTS.md`
+natively, so a second file could only ever drift away from the first.
 
 ## Home Assistant dev configuration
 
