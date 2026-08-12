@@ -10,7 +10,6 @@ description: >
   - Picking triggers/conditions/actions, or an automation mode
   - Writing Jinja in a blueprint, or using !input inside a template
   - Deciding homeassistant.min_version, or whether a change is breaking
-  - Reviewing a blueprint before commit, or debugging one in a live HA instance
   - script/blueprint-check fails and the error is not self-explanatory
 
   SYMPTOMS THAT MEAN YOU SHOULD HAVE READ THIS:
@@ -125,7 +124,7 @@ blueprint:
     What it does, what it needs, and what is surprising about it.
     Markdown is rendered in the import dialog.
   domain: automation # MUST match the folder it lives in
-  author: Blueprint Collection
+  author: <collection-title>
   source_url: https://github.com/<owner>/<repo>/blob/main/blueprints/automation/<author>/motion_light.yaml
   homeassistant:
     min_version: 2026.7.0 # all three parts required

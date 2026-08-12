@@ -44,6 +44,15 @@ repos:
         files: ^(blueprints/|schemas/yaml/|\.github/|\.pre-commit-config\.yaml|\.prettierrc\.yml)
         pass_filenames: true
 
+      # GitHub Actions security auditing. The workflows here hold write
+      # permissions and open pull requests, so an injectable expression or an
+      # over-scoped token is a real exposure rather than a style question.
+      - id: zizmor
+        name: zizmor
+        entry: bash -c 'if command -v zizmor &>/dev/null; then zizmor --pedantic "$@"; exit $?; fi; for venv in "$HOME/.local/ha-venv" ".local/ha-venv"; do if [[ -f "$venv/bin/zizmor" ]]; then source "$venv/bin/activate" 2>/dev/null || true; zizmor --pedantic "$@"; exit $?; fi; done; echo "⚠️  Skipping zizmor (venv not ready)"; exit 0' --
+        language: system
+        files: ^\.github/workflows/.*\.ya?ml$
+
       # Keep HA release train in sync across all three version sources:
       #   requirements_test.txt (pytest-homeassistant-custom-component pin)
       #   .devcontainer/.env (HA_VERSION — the canonical pin)
@@ -88,6 +97,17 @@ repos:
         language: system
         types: [markdown]
         pass_filenames: true
+
+      # Agent skills and instructions: Agent Skills spec conformance, the
+      # applyTo/paths contract, catalogue completeness, and the .agents/ symlinks.
+      # Triggered by AGENTS.md too — it is one of the two catalogues the check
+      # requires every skill to be listed in.
+      - id: skills-check
+        name: agent skills
+        entry: ./script/skills-check
+        language: system
+        files: ^(\.agents/|AGENTS\.md$)
+        pass_filenames: false
 
       # Spell checking
       - id: codespell

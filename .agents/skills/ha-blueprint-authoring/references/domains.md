@@ -32,7 +32,7 @@ blueprint:
     Needs: motion sensors and lights. On a Home Assistant restart a pending
     off-timer is lost and the lights stay on until the next motion cycle.
   domain: automation
-  author: Blueprint Collection
+  author: <collection-title>
   source_url: https://github.com/<owner>/<repo>/blob/main/blueprints/automation/<author>/motion_light.yaml
   homeassistant:
     min_version: 2026.7.0 # purpose-specific triggers
