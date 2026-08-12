@@ -1,5 +1,9 @@
 ---
 applyTo: "**/*.md"
+paths:
+  - "**/*.md"
+name: "Markdown Documentation"
+description: "Linting, formatting and structure rules for Markdown files"
 ---
 
 # Markdown Instructions
@@ -55,7 +59,7 @@ applyTo: "**/*.md"
 
 - `docs/development/` - Developer documentation (architecture, decisions)
 - `docs/user/` - End-user guides (installation, configuration)
-- `.ai-scratch/` - Temporary AI notes (not committed)
+- `.agents/scratch/` - Temporary AI notes (not committed)
 - Root `*.md` files - Project metadata (README, CONTRIBUTING, etc.)
 
 **Long documents (>500 lines):**

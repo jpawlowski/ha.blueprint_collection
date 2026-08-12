@@ -1,5 +1,9 @@
 ---
 applyTo: "**/configuration.yaml"
+paths:
+  - "**/configuration.yaml"
+name: "Home Assistant Configuration"
+description: "Schema and conventions for the development instance's configuration.yaml"
 ---
 
 # Home Assistant Configuration Instructions

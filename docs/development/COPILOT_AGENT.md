@@ -3,7 +3,7 @@
 ## Prompting for a New Blueprint
 
 **Context:** The repository documents its blueprint rules in `AGENTS.md`,
-`.github/instructions/blueprint.ha_blueprints.instructions.md`, and the existing example blueprints. Point the
+`.agents/instructions/collection.ha_blueprints.instructions.md`, and the existing example blueprints. Point the
 agent at those and let it follow them.
 
 For routine work, prefer the ready-made prompt file: `.github/prompts/Add Blueprint.prompt.md`.
@@ -34,7 +34,7 @@ Configurable by the user:
 - [input 1 - what the user picks and why]
 - [input 2 - with a default of X]
 
-Follow the rules in AGENTS.md and .github/instructions/blueprint.ha_blueprints.instructions.md.
+Follow the rules in AGENTS.md and .agents/instructions/collection.ha_blueprints.instructions.md.
 
 Tasks:
 
@@ -61,7 +61,7 @@ Configurable by the user:
 - The lights to turn off (target selector)
 - Grace period, default 5 minutes
 
-Follow the rules in AGENTS.md and .github/instructions/blueprint.ha_blueprints.instructions.md.
+Follow the rules in AGENTS.md and .agents/instructions/collection.ha_blueprints.instructions.md.
 
 Tasks:
 
@@ -145,4 +145,4 @@ configuration files rather than in instruction prose.
 ## Resources
 
 - [GitHub Copilot Best Practices](https://docs.github.com/en/copilot/tutorials/coding-agent/get-the-best-results)
-- `AGENTS.md` and `.github/copilot-instructions.md` - Instructions Copilot reads automatically
+- `AGENTS.md` — the instruction file Copilot reads automatically

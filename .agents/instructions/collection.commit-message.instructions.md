@@ -1,7 +1,7 @@
 ---
 applyTo: "**"
 name: "Commit Message Conventions"
-description: "Conventional Commits format for this Home Assistant integration project"
+description: "Conventional Commits format for this Home Assistant blueprint collection"
 ---
 
 # Commit Message Conventions
@@ -80,13 +80,13 @@ fix(coordinator): handle API timeout during initial refresh
 
 chore(devcontainer): add commit message instructions for Copilot
 
-- Add .github/instructions/blueprint.commit-message.instructions.md with
+- Add .agents/instructions/collection.commit-message.instructions.md with
   Conventional Commits types, scopes, rules, and examples
 - Wire github.copilot.chat.commitMessageGeneration.instructions
   in devcontainer.json and settings.default.jsonc
 - Add JSONC trailingComma override in .prettierrc.yml
-- Trim verbose commit format blocks from copilot-instructions.md
-  and AGENTS.md; both now reference the new file
+- Trim the verbose commit format block from AGENTS.md; it now
+  references the new file
 
 feat!: redesign config entry data structure
 

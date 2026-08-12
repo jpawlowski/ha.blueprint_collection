@@ -1,5 +1,9 @@
 ---
 applyTo: "**/*.py"
+paths:
+  - "**/*.py"
+name: "Python Style"
+description: "Style, typing and docstring rules for the test suite and tooling"
 ---
 
 # Python Code Instructions

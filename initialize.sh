@@ -319,7 +319,7 @@ collect_files() {
         -not -path "./.venv/*" \
         -not -path "./.ruff_cache/*" \
         -not -path "./.pytest_cache/*" \
-        -not -path "./.ai-scratch/*" \
+        -not -path "./.agents/scratch/*" \
         -not -name "initialize.sh" \
         -not -name "*.lock" \
         -not -name "package-lock.json" \
@@ -401,19 +401,15 @@ fi
 
 # 5. Remove the upstream syncs
 #
-# The collection template pulls its shared development environment from the
-# upstream integration blueprint, and vendored agent-skill material from
-# third-party skill repositories. Your repository does neither: it syncs from
-# the collection template via .github/workflows/template-sync.yml, which
-# already carries all of those files along. Keeping these syncs here would mean
-# unrelated repositories opening pull requests against yours.
+# The collection template vendors agent-skill material from third-party skill
+# repositories. Your repository does not: it syncs from the collection template
+# via .github/workflows/template-sync.yml, which already carries those files
+# along. Keeping this sync here would mean an unrelated repository opening pull
+# requests against yours.
 #
 # script/skills-sync is kept — it still verifies the vendored files you
 # received, and restores one if it gets edited by accident.
 readonly -a UPSTREAM_SYNC_FILES=(
-    ".github/workflows/chassis-sync.yml"
-    ".github/chassis-manifest.txt"
-    "script/chassis-sync"
     ".github/workflows/skills-sync.yml"
 )
 for upstream_sync_file in "${UPSTREAM_SYNC_FILES[@]}"; do

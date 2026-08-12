@@ -185,8 +185,9 @@ instead of plausible-looking YAML:
 
 - **[`AGENTS.md`](AGENTS.md)** — the primary reference: terminology, layout, authoring rules, required metadata,
   input/selector guidance, testing patterns, breaking-change policy
-- **[`CLAUDE.md`](CLAUDE.md)**, **[`CODEX.md`](CODEX.md)**, **[`.github/copilot-instructions.md`](.github/copilot-instructions.md)** — entry points per agent
-- **[`.github/instructions/`](.github/instructions/)** — path-specific rules applied by glob (blueprint authoring,
+- **[`CLAUDE.md`](CLAUDE.md)** — the Claude Code entry point; it imports `AGENTS.md`. Codex and Copilot read
+  `AGENTS.md` natively and need no file of their own
+- **[`.agents/instructions/`](.agents/instructions/)** — path-specific rules applied by glob (blueprint authoring,
   tests, YAML, JSON, shell, commit messages)
 - **[`.github/prompts/`](.github/prompts/)** — reusable prompts: _Add Blueprint_, _Review Blueprint_,
   _Create ADR_, _Create Implementation Plan_

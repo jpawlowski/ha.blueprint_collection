@@ -52,7 +52,7 @@ Automations created from this blueprint must be reconfigured after re-importing.
 ```
 
 Scope by blueprint name where it applies. See
-[`.github/instructions/blueprint.commit-message.instructions.md`](../../.github/instructions/blueprint.commit-message.instructions.md).
+[`.agents/instructions/collection.commit-message.instructions.md`](../../.agents/instructions/collection.commit-message.instructions.md).
 
 ## The release flow
 

@@ -1,5 +1,10 @@
 ---
 applyTo: "script/**, .devcontainer/*.sh"
+paths:
+  - "script/**"
+  - ".devcontainer/*.sh"
+name: "Shell Scripts"
+description: "Style and structure rules for the scripts under script/"
 ---
 
 # Shell Script Instructions

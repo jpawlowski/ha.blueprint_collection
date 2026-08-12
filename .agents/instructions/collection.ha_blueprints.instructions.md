@@ -1,5 +1,9 @@
 ---
 applyTo: "blueprints/**/*.yaml"
+paths:
+  - "blueprints/**/*.yaml"
+name: "Home Assistant Blueprints"
+description: "Non-negotiable rules for blueprint files: schema, inputs, selectors, modes"
 ---
 
 # Home Assistant Blueprint Instructions

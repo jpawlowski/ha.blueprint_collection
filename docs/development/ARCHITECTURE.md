@@ -124,7 +124,7 @@ schemas/json/                         JSON Schema for blueprints (editor support
 schemas/yaml/                         JSON Schema for configuration.yaml (editor support)
 docs/user/                            End-user documentation
 docs/development/                     This directory
-.github/instructions/                 Path-scoped AI agent rules
+.agents/instructions/                 Path-scoped AI agent rules
 .github/prompts/                      Reusable agent prompts
 .github/workflows/                    CI
 .devcontainer/.env                    HA_VERSION — the pinned Home Assistant version
@@ -152,5 +152,4 @@ and release notes exist to tell users _when to re-import_ and _what changed_ —
 - [RELEASE.md](RELEASE.md) — versioning and releases
 - [CUSTOMIZATION.md](CUSTOMIZATION.md) — adapting the template
 - [DECISIONS.md](DECISIONS.md) — why things are the way they are
-- [SKILLS_UPSTREAM.md](SKILLS_UPSTREAM.md) — agent-skill layout, and what the upstream chassis
-  should own once it adopts one
+- [SKILLS_UPSTREAM.md](SKILLS_UPSTREAM.md) — the agent layer, and what was ported from the upstream

@@ -1,5 +1,9 @@
 ---
 applyTo: "**/*.json"
+paths:
+  - "**/*.json"
+name: "JSON Formatting"
+description: "Indentation, ordering and schema conventions for JSON files"
 ---
 
 # JSON Instructions

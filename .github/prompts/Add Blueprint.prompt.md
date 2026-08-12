@@ -16,7 +16,7 @@ If not provided, ask for:
 
 ## Steps
 
-1. **Read the rules** in `.github/instructions/blueprint.ha_blueprints.instructions.md` and study an existing
+1. **Read the rules** in `.agents/instructions/collection.ha_blueprints.instructions.md` and study an existing
    blueprint of the same domain under `blueprints/<domain>/`
 2. **Create the file** at `blueprints/<domain>/<author>/<snake_case_name>.yaml` with complete metadata
    (`name`, `description`, `domain`, `author`, `source_url`, `homeassistant.min_version`)

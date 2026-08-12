@@ -171,7 +171,7 @@ one entity and wrong for three.
 - A small `_setup()` helper when several tests share an instantiation
 - Full type hints; `hass: HomeAssistant`, fixtures typed from `conftest`
 - Descriptive names — `test_light_turns_off_after_motion_clears`, not `test_2`
-- 4 spaces, 120-char lines, double quotes (see `.github/instructions/blueprint.python.instructions.md`)
+- 4 spaces, 120-char lines, double quotes (see `.agents/instructions/collection.python.instructions.md`)
 
 ## Reference
 

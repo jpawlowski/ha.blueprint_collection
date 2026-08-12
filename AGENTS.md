@@ -26,7 +26,7 @@ collection template and ships a complete development and test environment.
 - `config/` - Home Assistant configuration for local testing
 - `tests/` - Runtime tests that instantiate the blueprints in an in-memory HA instance
 - `script/` - Development and validation scripts
-- `.agents/skills/` - Agent skills, shared by all agents (see [Agent Skills](#agent-skills))
+- `.agents/` - Everything AI agents read: `instructions/`, `skills/`, `scratch/` (see [`.agents/README.md`](.agents/README.md))
 
 **Local Home Assistant instance:**
 
@@ -67,7 +67,9 @@ visible — but automations/scripts created from a blueprint cache their configu
 
 **Context-specific instructions:**
 
-If you're using GitHub Copilot, path-specific instructions in `.github/instructions/*.instructions.md` provide additional guidance for specific file types (blueprints, Python tests, YAML, etc.). This document serves as the primary reference for all agents.
+Path-scoped rules live in [`.agents/instructions/*.instructions.md`](.agents/instructions/) and
+are injected automatically for the file types they name. This document is the primary reference
+for all agents.
 
 ## Agent Skills
 
@@ -75,16 +77,22 @@ Deep, task-scoped guidance lives in [`.agents/skills/`](.agents/skills/README.md
 demand, so it can go into detail without costing context on every turn. Read the matching
 skill **before** starting work in its area:
 
-| Task                                                                                               | Skill                                                                      |
-| -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Writing, changing, or reviewing a blueprint — selectors, triggers, templating, `min_version`       | [`ha-blueprint-authoring`](.agents/skills/ha-blueprint-authoring/SKILL.md) |
-| Looking up the exact YAML for a Home Assistant trigger, condition, wait, or control-flow construct | [`ha-automation-patterns`](.agents/skills/ha-automation-patterns/SKILL.md) |
-| Runtime tests in `tests/`                                                                          | [`ha-blueprint-testing`](.agents/skills/ha-blueprint-testing/SKILL.md)     |
-| Releases, release notes, import links, community publication                                       | [`ha-blueprint-release`](.agents/skills/ha-blueprint-release/SKILL.md)     |
+| Task                                                                                               | Skill                                                                        | Instructions                                |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------- |
+| Writing or changing a blueprint — selectors, triggers, templating, `min_version`                   | [`ha-blueprint-authoring`](.agents/skills/ha-blueprint-authoring/SKILL.md)   | `collection.ha_blueprints.instructions.md`  |
+| Looking up the exact YAML for a Home Assistant trigger, condition, wait, or control-flow construct | [`ha-automation-patterns`](.agents/skills/ha-automation-patterns/SKILL.md)   | —                                           |
+| Runtime tests in `tests/`                                                                          | [`ha-blueprint-testing`](.agents/skills/ha-blueprint-testing/SKILL.md)       | `collection.tests.instructions.md`          |
+| Auditing a blueprint or a branch before a pull request                                             | [`ha-blueprint-review`](.agents/skills/ha-blueprint-review/SKILL.md)         | —                                           |
+| Releases, release notes, import links, community publication                                       | [`ha-blueprint-release`](.agents/skills/ha-blueprint-release/SKILL.md)       | `collection.commit-message.instructions.md` |
+| Settling requirements before any YAML is written                                                   | [`requirements-interview`](.agents/skills/requirements-interview/SKILL.md)   | —                                           |
+| Planning a change over ~10 files, or recording a decision                                          | [`change-planning`](.agents/skills/change-planning/SKILL.md)                 | —                                           |
+| Which `script/` command to run, hooks, devcontainer environment, the sync mechanisms               | [`repo-tooling`](.agents/skills/repo-tooling/SKILL.md)                       | `collection.shell.instructions.md`          |
+| Adding, changing or removing anything under `.agents/`                                             | [`agent-skill-maintenance`](.agents/skills/agent-skill-maintenance/SKILL.md) | `collection.markdown.instructions.md`       |
 
 Each skill is a short `SKILL.md` plus `references/` files read only when a task touches
-their area. `.agents/skills/` is the cross-agent convention: Copilot and Codex read it
-directly, and `.claude/skills` is a symlink to it for Claude Code. One copy, every agent.
+their area. `.agents/` is the cross-agent convention and the single source; the vendor-specific
+paths under `.github/` and `.claude/` are symlinks into it. One copy, every agent — see
+[`.agents/README.md`](.agents/README.md).
 
 `ha-automation-patterns` is **vendored verbatim** from an upstream repository and pinned in
 `.github/skills-manifest.txt`. Never edit anything under a `vendor/` directory —
@@ -96,11 +104,9 @@ Assistant version pinned here.
 keeps the non-negotiable rules so they are always in context; anything beyond them belongs
 in a skill, not here.
 
-**Other agent entry points:**
-
-- **Claude Code:** See [`CLAUDE.md`](CLAUDE.md) (pointer to this file)
-- **ChatGPT Codex:** See [`CODEX.md`](CODEX.md) (pointer to this file)
-- **GitHub Copilot:** See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) (compact version of this file)
+**Other agent entry points:** ChatGPT Codex and GitHub Copilot read this file natively, so there is nothing else
+to load. Claude Code reads [`CLAUDE.md`](CLAUDE.md), which imports this file with `@AGENTS.md` and adds only what
+is specific to Claude Code.
 
 ## Working With Developers
 
@@ -133,7 +139,7 @@ If a developer requests something that contradicts these instructions:
 
 **Four types of content with clear separation:**
 
-1. **Agent Instructions** - Always-in-context rules (`AGENTS.md`, `.github/instructions/`)
+1. **Agent Instructions** - Always-in-context rules (`AGENTS.md`, `.agents/instructions/`)
 2. **Agent Skills** - On-demand depth: how to author, test, and release blueprints (`.agents/skills/`)
 3. **Developer Documentation** - Architecture and design decisions (`docs/development/`)
 4. **User Documentation** - End-user guides and import instructions (`docs/user/`, `README.md`)
@@ -141,7 +147,7 @@ If a developer requests something that contradicts these instructions:
 **One fact lives in one place.** A rule about blueprint authoring belongs in the skill, and the other files link
 to it. Duplicating it means one copy will be wrong within a release.
 
-**AI Planning:** Use `.ai-scratch/` for temporary notes (never committed)
+**AI Planning:** Use `.agents/scratch/` for temporary notes (never committed)
 
 **Rules:**
 
@@ -162,7 +168,7 @@ When a task completes and the developer moves to a new topic, suggest committing
 - A previous commit request is NOT a standing permission; each commit requires a fresh explicit instruction
 - **Never ask about pushing** — the developer always handles `git push` themselves; do not offer or suggest it
 
-**Commit message format:** Follow [Conventional Commits](https://www.conventionalcommits.org/) — see `.github/instructions/blueprint.commit-message.instructions.md` for full conventions, types, scopes, and examples.
+**Commit message format:** Follow [Conventional Commits](https://www.conventionalcommits.org/) — see `.agents/instructions/collection.commit-message.instructions.md` for full conventions, types, scopes, and examples.
 
 ## Blueprint Authoring Rules
 
@@ -336,24 +342,20 @@ script/test -v             # Verbose
 ```
 
 **Python style for tests:** 4 spaces, 120 char lines, double quotes, full type hints. See
-`.github/instructions/blueprint.python.instructions.md` and `.github/instructions/blueprint.tests.instructions.md`.
+`.agents/instructions/collection.python.instructions.md` and `.agents/instructions/collection.tests.instructions.md`.
 
-## Shared Chassis Files (do not edit here)
+## Vendored Files (never edit)
 
-Part of the development environment is maintained upstream in the
-[integration blueprint](https://github.com/jpawlowski/hacs.integration_blueprint) and synced into this
-repository. Those files are listed in `.github/chassis-manifest.txt` — currently the DevContainer and agent
-runtime, `script/.lib/`, the generic scripts (`lint`, `markdown`, `shell`, `type-check`, `help`, …), and the
-editor/formatter configuration.
+Anything under a `vendor/` directory is third-party material copied verbatim and pinned to a commit in
+`.github/skills-manifest.txt`. It must stay byte-identical to that pin — `script/skills-sync --check` runs on
+every pull request and fails on any difference, including one a formatter made. To take a newer version, run
+`script/skills-sync --update <ref>` and review the diff. Commentary about vendored material goes in the wrapper
+`SKILL.md` beside it, never inside `vendor/`.
 
-**Never edit a file listed in that manifest.** A pull-request check compares them against upstream and fails on
-any local change. If one genuinely needs blueprint-specific content, remove it from the manifest and say so —
-taking ownership is a deliberate decision, not a workaround.
-
-```bash
-script/chassis-sync --check    # Verify; exit 1 on drift
-script/chassis-sync            # Pull upstream changes into the working tree
-```
+Everything else in this repository is owned here. The development environment originally came from the
+[integration blueprint](https://github.com/jpawlowski/hacs.integration_blueprint), but that sync was retired on
+2026-08-12 — see [DECISIONS.md](docs/development/DECISIONS.md). Improvements from there are now adopted by hand,
+deliberately, when someone decides they are worth it.
 
 ## Versioning and Releases
 

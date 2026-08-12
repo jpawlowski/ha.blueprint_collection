@@ -1,20 +1,22 @@
 {
-  // Extra files linted beyond the globs passed by script/markdown
-  // (*.md, docs/**/*.md, .github/**/*.md). The agent skills live in
-  // .agents/skills/, which those globs do not reach.
-  "globs": [".agents/skills/**/*.md"],
-
   // Files and directories excluded from markdownlint validation.
   // Keep in sync with .prettierignore — markdownlint-cli2 does NOT support .markdownlintignore.
+  //
+  // No "globs" key here: script/markdown and script/markdown-check already pass
+  // .agents/**/*.md alongside *.md, docs/**/*.md and .github/**/*.md.
   "ignores": [
     // Runtime / generated directories
     "node_modules/**",
     "config/**",
     ".local/**",
-    // Claude Code's symlink to .agents/skills/. The same files are already
-    // linted through their real path above; linting them twice reports every
-    // finding twice and lets the two paths disagree.
+    // Agent scratch space — working notes, never part of the deliverable.
+    ".agents/scratch/**",
+    // The symlinks into .agents/. The same files are already linted through
+    // their real path; linting them twice reports every finding twice and lets
+    // the two paths disagree.
     ".claude/skills/**",
+    ".claude/rules/**",
+    ".github/instructions/**",
     // Third-party files vendored verbatim from upstream repositories. They must
     // stay byte-identical to their pinned commit (script/skills-sync --check),
     // so a lint fix here would break the sync rather than improve anything.

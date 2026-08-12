@@ -2,9 +2,14 @@
 config/
 !config/configuration.yaml
 
-# Claude Code's symlink to .agents/skills/ — the same files reached by a second
-# path. Format them via .agents/skills/ only.
+# The symlinks into .agents/ — the same files reached by a second path.
+# Format them via .agents/ only.
 .claude/skills/
+.claude/rules/
+.github/instructions/
+
+# Agent scratch space — working notes, never part of the deliverable.
+.agents/scratch/
 
 # Third-party files vendored verbatim — must match their pinned upstream commit
 # (script/skills-sync --check), so they must not be reformatted here.

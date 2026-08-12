@@ -25,16 +25,33 @@ for s in .agents/skills/*/; do ln -s "../../$s" ".claude/skills/$(basename "$s")
 
 ## The skills
 
-| Skill                                                       | Use it for                                                                                                            |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| [`ha-blueprint-authoring`](ha-blueprint-authoring/SKILL.md) | Writing, changing, or reviewing a blueprint: selectors, inputs, triggers, templating, modes, `min_version`, debugging |
-| [`ha-automation-patterns`](ha-automation-patterns/SKILL.md) | The broad catalogue of Home Assistant triggers, conditions, waits, modes, and control flow — **vendored**             |
-| [`ha-blueprint-testing`](ha-blueprint-testing/SKILL.md)     | Runtime tests against an in-memory Home Assistant instance                                                            |
-| [`ha-blueprint-release`](ha-blueprint-release/SKILL.md)     | Versioning, user-facing release notes, import links, community publication                                            |
+Working on a blueprint:
+
+| Skill                                                       | Use it for                                                                                                |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [`ha-blueprint-authoring`](ha-blueprint-authoring/SKILL.md) | Writing or changing a blueprint: selectors, inputs, triggers, templating, modes, `min_version`, debugging |
+| [`ha-automation-patterns`](ha-automation-patterns/SKILL.md) | The broad catalogue of Home Assistant triggers, conditions, waits, modes, and control flow — **vendored** |
+| [`ha-blueprint-testing`](ha-blueprint-testing/SKILL.md)     | Runtime tests against an in-memory Home Assistant instance                                                |
+| [`ha-blueprint-review`](ha-blueprint-review/SKILL.md)       | Auditing a blueprint or a branch before a pull request, and reporting findings by severity                |
+| [`ha-blueprint-release`](ha-blueprint-release/SKILL.md)     | Versioning, user-facing release notes, import links, community publication                                |
+
+Working in this repository at all:
+
+| Skill                                                         | Use it for                                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [`requirements-interview`](requirements-interview/SKILL.md)   | Settling what to build, before any YAML — one question at a time, ending in a brief  |
+| [`change-planning`](change-planning/SKILL.md)                 | Planning a change over ~10 files, and recording a decision in `DECISIONS.md`         |
+| [`repo-tooling`](repo-tooling/SKILL.md)                       | Which `script/` command to run, hooks, devcontainer environment, the sync mechanisms |
+| [`agent-skill-maintenance`](agent-skill-maintenance/SKILL.md) | Adding, changing, renaming or removing anything under `.agents/`                     |
 
 Each skill is a thin `SKILL.md` (the index and the always-binding rules) plus `references/`
 files that are read only when a task touches their area. Start at the routing table at the
 top of the `SKILL.md`.
+
+**Names are deliberate.** `ha-blueprint-*` is work on the deliverable, `ha-*` is Home Assistant
+knowledge that is not blueprint-specific, and an unprefixed name is about working here. Nothing
+is called `blueprint-*`: in this repository that word means a Home Assistant blueprint, and the
+upstream chassis uses the same prefix for something else entirely.
 
 `ha-blueprint-authoring` and `ha-automation-patterns` overlap deliberately: the first is the
 blueprint-specific subset, verified against the Home Assistant pinned in this repository; the
@@ -66,11 +83,14 @@ reference material without the framing; the wrapper `SKILL.md` states the overri
 
 - **[`AGENTS.md`](../../AGENTS.md)** — the repository's primary agent entry point: layout,
   scripts, workflow, commit rules. Always in context.
-- **`.github/instructions/*.instructions.md`** — path-scoped rules Copilot applies
+- **[`.agents/instructions/*.instructions.md`](../instructions/)** — path-scoped rules applied
   automatically by glob. Deliberately short; they point here for detail.
 - **`.agents/skills/`** — the depth. Loaded on demand, so it can be long without costing
   context on every turn.
 - **`docs/development/`** — documentation for humans: architecture, decisions, onboarding.
+
+The layout of `.agents/` itself, and which client reads which path, is in
+[`../README.md`](../README.md).
 
 **One fact lives in one place.** When something is true of blueprint _authoring_, it belongs
 in a skill and the other files link to it. Duplicating a rule into two files means one of
@@ -80,7 +100,8 @@ them will be wrong within a release.
 
 1. Create `.agents/skills/<name>/SKILL.md` with YAML frontmatter (`name`, `description`,
    `license`). Put trigger phrases in the `description` — that is what agents match on.
-2. Add a row to the table above.
+2. Add a row to the table above **and** to the routing table in `AGENTS.md`. A skill missing
+   from either is effectively invisible; `script/skills-check` fails the build if it is.
 
 No symlink step: `.claude/skills` points at this whole directory, and the other agents read
 `.agents/skills/` directly.
@@ -90,8 +111,24 @@ To vendor a third-party file instead, add an `UPSTREAM`/`REF` block and a mappin
 licence alongside it, and write a wrapper `SKILL.md` that states where the upstream framing
 does not apply here.
 
-Keep `SKILL.md` under roughly 200 lines. Depth goes in `references/`, linked from a routing
-table — that is the whole point of the split.
+Keep `SKILL.md` under roughly 200 lines — `script/skills-check` enforces 500 as a hard limit,
+from the Agent Skills specification. Depth goes in `references/`, exactly one level down,
+linked from a routing table. That is the whole point of the split.
+
+The full procedure, including the rule-versus-procedure seam and what to re-verify after a
+Home Assistant version bump, is in
+[`agent-skill-maintenance`](agent-skill-maintenance/SKILL.md).
+
+## Validation
+
+```bash
+script/skills-check   # part of script/lint and script/lint-check, so CI enforces it
+```
+
+It checks the Agent Skills specification (frontmatter fields, name and description limits,
+body length, reference depth), that every skill is listed in both catalogues, that every
+relative link resolves, that `applyTo` and `paths` agree in the instruction files, that no
+concrete project identifier leaked in, and that the symlinks into `.agents/` are intact.
 
 ## Editing rules
 
@@ -105,14 +142,9 @@ table — that is the whole point of the split.
 
 ## Linting
 
-`.markdownlint-cli2.jsonc` adds `.agents/skills/**/*.md` to the markdownlint globs and
-excludes the `.claude/skills/` symlink and every `vendor/` directory, so each file is linted
-exactly once, through its real path.
+`script/markdown` and `script/markdown-check` glob `.agents/**/*.md` alongside the rest, so
+both Prettier and markdownlint cover this directory in a normal run.
 
-Prettier is the exception: its globs live in `script/markdown`, which is chassis-managed and
-must not be edited here, and they do not reach this directory. The pre-commit hook formats
-staged files by path and therefore does cover it. To format outside a commit:
-
-```bash
-./node_modules/.bin/prettier --write ".agents/skills/**/*.md"
-```
+`.markdownlint-cli2.jsonc` and `.prettierignore` exclude the symlinked paths and every
+`vendor/` directory, so each file is formatted exactly once, through its real path, and
+vendored files are never touched.

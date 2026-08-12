@@ -82,7 +82,7 @@ BREAKING CHANGE: The `wait_time` input was renamed to `no_motion_wait`.
 Automations created from this blueprint must be reconfigured after re-importing.
 ```
 
-Full conventions: `.github/instructions/blueprint.commit-message.instructions.md`.
+Full conventions: `.agents/instructions/collection.commit-message.instructions.md`.
 
 ## The flow
 

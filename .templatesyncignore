@@ -48,12 +48,16 @@ DEPENDENCIES.md
 # ── AI agent instruction files ───────────────────────────────
 # Project-identity files are customized during initialization and must not be
 # overwritten by template sync (they contain your collection title, author
-# folder, repo URL, etc.). The path-specific *.instructions.md files under
-# .github/instructions/ use generic placeholders and ARE safely synced.
+# folder, repo URL, etc.). Everything under .agents/ uses generic placeholders
+# (<author>, <collection-title>, <owner>/<repo>) and IS safely synced —
+# script/skills-check rejects concrete identifiers there for exactly this reason.
 AGENTS.md
-CODEX.md
 CLAUDE.md
-.github/copilot-instructions.md
+
+# ── Agent scratch space ──────────────────────────────────────
+# Working notes only, and gitignored anyway — listed so an author's notes are
+# never in scope even if the directory is force-added locally.
+.agents/scratch/
 
 # ── Project governance ────────────────────────────────────────
 # Shipped once with the template, then owned by the collection maintainer.
@@ -98,15 +102,6 @@ docs/
 # Keep this file in your control — customize the schedule,
 # add PAT secrets, or adjust PR settings as you see fit.
 .github/workflows/template-sync.yml
-
-# ── Chassis sync (collection template only) ──────────────────
-# The collection template pulls its shared development environment from the
-# upstream integration blueprint. Your repository syncs from the collection
-# template instead, so these files must never arrive here — initialize.sh
-# removes them, and this entry keeps template sync from putting them back.
-.github/workflows/chassis-sync.yml
-.github/chassis-manifest.txt
-script/chassis-sync
 
 # ── Lockfiles ────────────────────────────────────────────────
 # Manage your own lockfile to avoid noisy, conflict-prone PRs.

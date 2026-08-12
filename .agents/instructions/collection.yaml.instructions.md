@@ -1,5 +1,10 @@
 ---
 applyTo: "**/*.yaml, **/*.yml"
+paths:
+  - "**/*.yaml"
+  - "**/*.yml"
+name: "YAML Formatting"
+description: "Indentation, quoting and Home Assistant tag conventions for YAML files"
 ---
 
 # YAML Instructions

@@ -1,5 +1,9 @@
 ---
 applyTo: "tests/**/*.py"
+paths:
+  - "tests/**/*.py"
+name: "Blueprint Runtime Tests"
+description: "Non-negotiable rules for the runtime test suite under tests/"
 ---
 
 # Test Instructions
