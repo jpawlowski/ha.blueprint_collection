@@ -27,6 +27,27 @@ updates:
           - minor
           - patch
 
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(deps)"
+    # Let patch releases settle 3 days, minor releases 7 days before opening a PR
+    cooldown:
+      semver-patch-days: 3
+      semver-minor-days: 7
+    groups:
+      # These are all development-only formatters and linters (commitlint,
+      # markdownlint-cli2, prettier). Bundle minor/patch into a single PR;
+      # major updates stay separate because they change formatting output.
+      npm-dependencies:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
